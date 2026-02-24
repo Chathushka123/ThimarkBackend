@@ -1,0 +1,11 @@
+{
+  "smtp": {
+    "host": "smtp.office365.com",
+    "port": 587,
+    "encryption": "tls",
+    "username": "approvaltesting@smashyerp.com",
+    "password": "U0cAppr0val!"
+  },
+  "laravel_server_address": "http://128.199.188.155/uoctest",
+  "react_server_address": "http://128.199.188.155/uoc-test"
+}

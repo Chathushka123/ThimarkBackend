@@ -1,4 +1,4 @@
-    // ...existing code...
+
     <?php
 
     use Illuminate\Support\Facades\Route;
@@ -537,7 +537,7 @@
             Route::post('grns', 'GrnController@store');
             Route::delete('grns/{grn}', 'GrnController@destroy');
 
-                        // Stock Materials CRUD
+            // Stock Materials CRUD
             Route::apiResource('stock-materials', 'StockMaterialController');
             // MainModel CRUD
             Route::apiResource('main-models', 'MainModelController');

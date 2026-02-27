@@ -11,13 +11,14 @@ $navigator_json = '
        "nodes":[
         
 
-      {
+         {
             "caption":"Material",
             "icon":"fas fa-cubes",
             "type":"node",
             "permitted" : 0,
             "path":"/material"
          },
+
           {
             "caption":"Warehouse ",
             "icon":"fas fa-warehouse",

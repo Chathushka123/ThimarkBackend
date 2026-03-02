@@ -4,14 +4,14 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Warehouse extends Model
+class WarehouseLocation extends Model
 {
-    protected $table = 'warehouses';
+    protected $table = 'warehouse_locations';
 
     protected $fillable = [
-        'name',
-        'code',
-        'location_basis',
+        'warehouse_id',
+        'rack',
+        'bin',
         'active',
     ];
 
@@ -28,8 +28,13 @@ class Warehouse extends Model
         });
     }
 
-    public function locations()
+    public function warehouse()
     {
-        return $this->hasMany(WarehouseLocation::class);
+        return $this->belongsTo(Warehouse::class);
+    }
+
+    public function whlItems()
+    {
+        return $this->hasMany(WhlItem::class, 'whl_id');
     }
 }

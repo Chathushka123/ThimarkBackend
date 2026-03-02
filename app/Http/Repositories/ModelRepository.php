@@ -46,4 +46,11 @@ class ModelRepository
         }
         return $model->load(['mainModel', 'modelStockItems']);
     }
+
+    public function delete($id)
+    {
+        $model = Model::findOrFail($id);
+        $model->delete();
+        return true;
+    }
 }

@@ -23,16 +23,6 @@
 
         // Route::get('search', 'Api\SearchController@search')->name('search.index');
         Route::group(['middleware' => 'auth:api'], function () {
-            // Model CRUD (explicit routes)
-            Route::get('models', 'ModelController@index');
-            Route::get('models/{model}', 'ModelController@show');
-            Route::post('models', 'ModelController@store');
-            Route::put('models/{model}', 'ModelController@update');
-            Route::delete('models/{model}', 'ModelController@destroy');
-            Route::apiResource('models', 'ModelController');
-
-
-
             Route::post('novelSearch', 'Api\SearchController@novelSearch')->name('novelSearch');
             Route::post('getFunctionalPermission', 'Api\SearchController@getFunctionalPermission')->name('getFunctionalPermission');
 
@@ -475,7 +465,7 @@
             Route::post('MarkerPlan/generateMarkerPlan', 'Api\MarkerPlanController@generateMarkerPlan')->name('generateMarkerPlan');
 
 
-            // Invoice 
+            // Invoice
             Route::post('Invoice/createAndUpdateInvoice', 'Api\InvoiceController@createAndUpdateInvoice')->name('createAndUpdateInvoice');
 
             Route::post('Invoice/getSearchByInvoice', 'Api\InvoiceController@getSearchByInvoice')->name('getSearchByInvoice');
@@ -498,58 +488,36 @@
             Route::post('Invoice/createPaymentType', 'Api\InvoiceController@createPaymentType')->name('createPaymentType');
 
             // UOM
-            Route::post('Uom/getUoms', 'Api\UomController@getUoms')->name('getUoms');
+            Route::get('Uom/getUoms', 'Api\UomController@getUoms')->name('getUoms');
             Route::post('Uom/createAndUpdateUom', 'Api\UomController@createAndUpdateUom')->name('createAndUpdateUom');
             Route::post('Uom/deleteUom', 'Api\UomController@deleteUom')->name('deleteUom');
 
-            // Warehouses and Locations CRUD (explicit routes)
-            Route::get('warehouses', 'WarehouseController@index');
-            Route::get('warehouses/{warehouse}', 'WarehouseController@show');
-            Route::post('warehouses', 'WarehouseController@store');
-            Route::put('warehouses/{warehouse}', 'WarehouseController@update');
-            Route::delete('warehouses/{warehouse}', 'WarehouseController@destroy');
+            // Warehouses and Locations CRUD
+            Route::apiResource('warehouses', 'WarehouseController');
 
-            // Stock Materials CRUD (explicit routes)
-            Route::get('stock-materials', 'StockMaterialController@index');
-            Route::get('stock-materials/{stock_material}', 'StockMaterialController@show');
-            Route::post('stock-materials', 'StockMaterialController@store');
-            Route::put('stock-materials/{stock_material}', 'StockMaterialController@update');
-            Route::delete('stock-materials/{stock_material}', 'StockMaterialController@destroy');
-
-            // WHL Items CRUD (explicit routes)
-            Route::get('whl-items', 'WhlItemController@index');
-            Route::get('whl-items/{whl_item}', 'WhlItemController@show');
-            Route::post('whl-items', 'WhlItemController@store');
-            Route::put('whl-items/{whl_item}', 'WhlItemController@update');
-            Route::delete('whl-items/{whl_item}', 'WhlItemController@destroy');
-            // Warehouses and Locations CRUD (single controller)
-
-            // GRN Details CRUD (explicit routes)
-            Route::get('grn-details', 'GrnDetailController@index');
-            Route::get('grn-details/{grn_detail}', 'GrnDetailController@show');
-            Route::post('grn-details', 'GrnDetailController@store');
-            Route::put('grn-details/{grn_detail}', 'GrnDetailController@update');
-            Route::delete('grn-details/{grn_detail}', 'GrnDetailController@destroy');
-            Route::apiResource('grn-details', 'GrnDetailController');
-            // GRNs CRUD (explicit routes)
-            Route::get('grns', 'GrnController@index');
-            Route::get('grns/{grn}', 'GrnController@show');
-            Route::post('grns', 'GrnController@store');
-            Route::delete('grns/{grn}', 'GrnController@destroy');
+            // Warehouse Locations CRUD
+            Route::apiResource('warehouse-locations', 'WarehouseLocationController');
 
             // Stock Materials CRUD
             Route::apiResource('stock-materials', 'StockMaterialController');
-            // MainModel CRUD
-            Route::apiResource('main-models', 'MainModelController');
-            // Model CRUD 
-            Route::apiResource('models', 'ModelController')->only(['index', 'show', 'update']);
-            // ModelStockItem CRUD
 
+            // WHL Items CRUD
+            Route::apiResource('whl-items', 'WhlItemController');
+
+            // GRN Details CRUD
+            Route::apiResource('grn-details', 'GrnDetailController');
+
+            // GRNs CRUD
             Route::apiResource('grns', 'GrnController')->only(['index', 'show', 'store', 'destroy']);
 
-            Route::apiResource('warehouses', 'WarehouseController');
-            Route::apiResource('stock-materials', 'StockMaterialController');
-            Route::apiResource('whl-items', 'WhlItemController');
+            // MainModel CRUD
+            Route::apiResource('main-models', 'MainModelController');
+
+            // Model CRUD
+            Route::apiResource('models', 'ModelController');
+
+            // ModelStockItem CRUD
+            Route::apiResource('model-stock-items', 'ModelStockItemController');
         });
     });
 

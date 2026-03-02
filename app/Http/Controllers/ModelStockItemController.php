@@ -2,20 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Repositories\ModelRepository;
+use App\Http\Repositories\ModelStockItemRepository;
 use Illuminate\Http\Request;
 
-class ModelController extends Controller
+class ModelStockItemController extends Controller
 {
     protected $repository;
 
-    public function __construct(ModelRepository $repository)
+    public function __construct(ModelStockItemRepository $repository)
     {
         $this->repository = $repository;
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        // If model_id is provided, filter by model
+        if ($request->has('model_id')) {
+            return response()->json($this->repository->getByModelId($request->model_id));
+        }
+
         return response()->json($this->repository->all());
     }
 
@@ -26,13 +31,13 @@ class ModelController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->only(['main_model_id', 'color', 'sizes', 'name', 'active', 'model_stock_items']);
-        return response()->json($this->repository->create($data));
+        $data = $request->only(['stock_item_id', 'model_id', 'consumption']);
+        return response()->json($this->repository->create($data), 201);
     }
 
     public function update(Request $request, $id)
     {
-        $data = $request->only(['main_model_id', 'color', 'sizes', 'name', 'active', 'model_stock_items']);
+        $data = $request->only(['stock_item_id', 'model_id', 'consumption']);
         return response()->json($this->repository->update($id, $data));
     }
 

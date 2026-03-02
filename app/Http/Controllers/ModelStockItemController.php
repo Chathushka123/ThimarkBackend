@@ -37,7 +37,7 @@ class ModelStockItemController extends Controller
 
     public function update(Request $request, $id)
     {
-        $data = $request->only(['stock_item_id', 'model_id', 'consumption']);
+        $data = $request->only(['stock_item_id', 'model_id', 'consumption', 'active']);
         return response()->json($this->repository->update($id, $data));
     }
 

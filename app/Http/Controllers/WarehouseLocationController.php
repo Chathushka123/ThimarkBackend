@@ -2,20 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Repositories\WhlItemRepository;
+use App\Http\Repositories\WarehouseLocationRepository;
 use Illuminate\Http\Request;
 
-class WhlItemController extends Controller
+class WarehouseLocationController extends Controller
 {
     protected $repository;
 
-    public function __construct(WhlItemRepository $repository)
+    public function __construct(WarehouseLocationRepository $repository)
     {
         $this->repository = $repository;
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        // If warehouse_id is provided, filter by warehouse
+        if ($request->has('warehouse_id')) {
+            return response()->json($this->repository->getByWarehouseId($request->warehouse_id));
+        }
+
         return response()->json($this->repository->all());
     }
 
@@ -27,9 +32,9 @@ class WhlItemController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'whl_id' => 'required|exists:warehouse_locations,id',
-            'stock_item_id' => 'required|exists:stock_materials,id',
-            'qty' => 'required|numeric|min:0',
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'rack' => 'nullable|string|max:50',
+            'bin' => 'nullable|string|max:50',
         ]);
 
         return response()->json($this->repository->create($validated), 201);
@@ -38,9 +43,9 @@ class WhlItemController extends Controller
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'whl_id' => 'sometimes|required|exists:warehouse_locations,id',
-            'stock_item_id' => 'sometimes|required|exists:stock_materials,id',
-            'qty' => 'sometimes|required|numeric|min:0',
+            'warehouse_id' => 'sometimes|required|exists:warehouses,id',
+            'rack' => 'nullable|string|max:50',
+            'bin' => 'nullable|string|max:50',
         ]);
 
         return response()->json($this->repository->update($id, $validated));

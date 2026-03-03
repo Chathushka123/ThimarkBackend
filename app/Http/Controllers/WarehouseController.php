@@ -2,20 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Warehouse;
-use App\WarehouseLocation;
+use App\Http\Repositories\WarehouseRepository;
 use Illuminate\Http\Request;
 
 class WarehouseController extends Controller
 {
+    protected $repository;
+
+    public function __construct(WarehouseRepository $repository)
+    {
+        $this->repository = $repository;
+    }
+
     public function index()
     {
-        return Warehouse::with('locations')->get();
+        return response()->json($this->repository->all());
     }
 
     public function show($id)
     {
-        return Warehouse::with('locations')->findOrFail($id);
+        return response()->json($this->repository->find($id));
     }
 
     public function store(Request $request)
@@ -23,54 +29,35 @@ class WarehouseController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:100',
             'code' => 'required|string|max:50',
-            'location_basis' => 'required|boolean',
+            'location_basis' => 'required|int',
             'locations' => 'array',
             'locations.*.rack' => 'nullable|string|max:50',
             'locations.*.bin' => 'nullable|string|max:50',
+            'locations.*.active' => 'nullable|int',
         ]);
 
-        $warehouse = Warehouse::create($validated);
-        if (!empty($validated['locations'])) {
-            foreach ($validated['locations'] as $loc) {
-                $warehouse->locations()->create($loc);
-            }
-        }
-        return $warehouse->load('locations');
+        return response()->json($this->repository->create($validated), 201);
     }
 
     public function update(Request $request, $id)
     {
-        $warehouse = Warehouse::findOrFail($id);
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:100',
             'code' => 'sometimes|required|string|max:50',
-            'location_basis' => 'sometimes|required|boolean',
+            'location_basis' => 'sometimes|required|int',
             'locations' => 'array',
             'locations.*.id' => 'sometimes|integer|exists:warehouse_locations,id',
             'locations.*.rack' => 'nullable|string|max:50',
             'locations.*.bin' => 'nullable|string|max:50',
+            'locations.*.active' => 'nullable|int',
         ]);
-        $warehouse->update($validated);
-        if (isset($validated['locations'])) {
-            foreach ($validated['locations'] as $loc) {
-                if (isset($loc['id'])) {
-                    $location = $warehouse->locations()->find($loc['id']);
-                    if ($location) {
-                        $location->update($loc);
-                    }
-                } else {
-                    $warehouse->locations()->create($loc);
-                }
-            }
-        }
-        return $warehouse->load('locations');
+
+        return response()->json($this->repository->update($id, $validated));
     }
 
     public function destroy($id)
     {
-        $warehouse = Warehouse::findOrFail($id);
-        $warehouse->locations()->delete();
-        $warehouse->delete();
+        $this->repository->delete($id);
         return response()->json(['message' => 'Deleted successfully']);
     }
 }

@@ -63,4 +63,12 @@ class StockMaterialController extends Controller
         $stockMaterial->delete();
         return response()->json(['message' => 'Deleted successfully']);
     }
+
+    public function search(Request $request)
+    {
+        $q = $request->query('q', '');
+        return StockMaterial::where('name', 'like', "%{$q}%")
+            ->orWhere('code', 'like', "%{$q}%")
+            ->pluck('id');
+    }
 }

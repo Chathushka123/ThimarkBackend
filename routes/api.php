@@ -502,6 +502,7 @@
             Route::apiResource('warehouse-locations', 'WarehouseLocationController');
 
             // Stock Materials CRUD
+            Route::get('stock-materials/search', 'StockMaterialController@search');
             Route::apiResource('stock-materials', 'StockMaterialController');
 
             // WHL Items CRUD

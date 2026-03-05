@@ -34,4 +34,11 @@ class StockMaterialRepository
         $stockMaterial->delete(); // Triggers soft-delete logic (active=false)
         return true;
     }
+
+    public function search(string $q): \Illuminate\Support\Collection
+    {
+        return StockMaterial::where('name', 'like', "%{$q}%")
+            ->orWhere('code', 'like', "%{$q}%")
+            ->pluck('id');
+    }
 }

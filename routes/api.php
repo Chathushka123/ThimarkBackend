@@ -492,6 +492,9 @@
             Route::post('Uom/createAndUpdateUom', 'Api\UomController@createAndUpdateUom')->name('createAndUpdateUom');
             Route::post('Uom/deleteUom', 'Api\UomController@deleteUom')->name('deleteUom');
 
+            // Inventory
+            Route::get('inventory/warehouse/{id}', 'InventoryController@getWarehouseStructure')->name('inventory.warehouse.structure');
+
             // Warehouses and Locations CRUD
             Route::apiResource('warehouses', 'WarehouseController');
 
@@ -499,6 +502,7 @@
             Route::apiResource('warehouse-locations', 'WarehouseLocationController');
 
             // Stock Materials CRUD
+            Route::get('stock-materials/search', 'StockMaterialController@search');
             Route::apiResource('stock-materials', 'StockMaterialController');
 
             // WHL Items CRUD

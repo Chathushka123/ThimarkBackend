@@ -494,6 +494,7 @@
 
             // Inventory
             Route::get('inventory/warehouse/{id}', 'InventoryController@getWarehouseStructure')->name('inventory.warehouse.structure');
+            Route::post('inventory/transfer', 'InventoryController@transferStock')->name('inventory.transfer');
 
             // Warehouses and Locations CRUD
             Route::apiResource('warehouses', 'WarehouseController');

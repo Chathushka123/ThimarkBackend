@@ -492,6 +492,11 @@
             Route::post('Uom/createAndUpdateUom', 'Api\UomController@createAndUpdateUom')->name('createAndUpdateUom');
             Route::post('Uom/deleteUom', 'Api\UomController@deleteUom')->name('deleteUom');
 
+            // Batch
+            Route::get('Batch/getBatches', 'Api\BatchController@getBatches')->name('getBatches');
+            Route::post('Batch/createAndUpdateBatch', 'Api\BatchController@createAndUpdateBatch')->name('createAndUpdateBatch');
+            Route::post('Batch/deleteBatch', 'Api\BatchController@deleteBatch')->name('deleteBatch');
+
             // Inventory
             Route::get('inventory/warehouse/{id}', 'InventoryController@getWarehouseStructure')->name('inventory.warehouse.structure');
 

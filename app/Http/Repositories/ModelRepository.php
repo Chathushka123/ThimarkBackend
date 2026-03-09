@@ -8,12 +8,22 @@ class ModelRepository
 {
     public function all()
     {
-        return Model::with(['mainModel', 'modelStockItems'])->get();
+        return Model::with([
+            'mainModel',
+            'modelStockItems' => function ($query) {
+                $query->where('active', true);
+            }
+        ])->where('active', true)->get();
     }
 
     public function find($id)
     {
-        return Model::with(['mainModel', 'modelStockItems'])->findOrFail($id);
+        return Model::with([
+            'mainModel',
+            'modelStockItems' => function ($query) {
+                $query->where('active', true);
+            }
+        ])->findOrFail($id);
     }
 
     public function create(array $data)
@@ -24,7 +34,12 @@ class ModelRepository
         foreach ($modelStockItems as $itemData) {
             $model->modelStockItems()->create($itemData);
         }
-        return $model->load(['mainModel', 'modelStockItems']);
+        return $model->load([
+            'mainModel',
+            'modelStockItems' => function ($query) {
+                $query->where('active', true);
+            }
+        ]);
     }
 
     public function update($id, array $data)
@@ -44,7 +59,12 @@ class ModelRepository
                 }
             }
         }
-        return $model->load(['mainModel', 'modelStockItems']);
+        return $model->load([
+            'mainModel',
+            'modelStockItems' => function ($query) {
+                $query->where('active', true);
+            }
+        ]);
     }
 
     public function delete($id)

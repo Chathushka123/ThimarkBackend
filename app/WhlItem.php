@@ -2,6 +2,7 @@
 
 namespace App;
 
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 
 class WhlItem extends Model
@@ -49,5 +50,9 @@ class WhlItem extends Model
     public function stockItem()
     {
         return $this->belongsTo(StockMaterial::class, 'stock_item_id');
+    }
+    protected function serializeDate(DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
     }
 }

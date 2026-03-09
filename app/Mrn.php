@@ -2,42 +2,54 @@
 
 namespace App;
 
-use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
+use DateTimeInterface;
 
-class MainModel extends Model
+class Mrn extends Model
 {
-    protected $table = 'main_models';
-
     protected $fillable = [
-        'name',
+        'batch_id',
+        'warehouse_id',
+        'active',
         'created_by',
         'updated_by',
-        'active',
+    ];
+
+    protected $casts = [
+        'active' => 'boolean',
     ];
 
     protected static function boot()
     {
         parent::boot();
-        static::addGlobalScope('active', function ($query) {
-            $query->where('active', true);
-        });
-        static::deleting(function ($model) {
-            $model->active = false;
-            $model->save();
-            return false;
-        });
+
         static::creating(function ($model) {
             if (auth()->check()) {
                 $model->created_by = auth()->id();
                 $model->updated_by = auth()->id();
             }
         });
+
         static::updating(function ($model) {
             if (auth()->check()) {
                 $model->updated_by = auth()->id();
             }
         });
+    }
+
+    public function batch()
+    {
+        return $this->belongsTo(Batch::class, 'batch_id');
+    }
+
+    public function warehouse()
+    {
+        return $this->belongsTo(Warehouse::class, 'warehouse_id');
+    }
+
+    public function details()
+    {
+        return $this->hasMany(MrnDetail::class, 'mrn_id');
     }
 
     protected function serializeDate(DateTimeInterface $date)

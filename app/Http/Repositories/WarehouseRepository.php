@@ -35,11 +35,28 @@ class WarehouseRepository
         $warehouse = Warehouse::findOrFail($id);
         $locations = $data['locations'] ?? [];
         unset($data['locations']);
+
+        if (isset($data['active']) && $data['active'] == 0) {
+            $hasStock = $warehouse->locations()
+                ->whereHas('whlItems', fn($q) => $q->where('qty', '>', 0))
+                ->exists();
+
+            if ($hasStock) {
+                throw new \Exception('Cannot deactivate warehouse: one or more locations have items with stock quantity greater than zero.');
+            }
+        }
+
         $warehouse->update($data);
         foreach ($locations as $loc) {
             if (isset($loc['id'])) {
                 $location = $warehouse->locations()->find($loc['id']);
                 if ($location) {
+                    if (isset($loc['active']) && $loc['active'] == 0) {
+                        $hasStock = $location->whlItems()->where('qty', '>', 0)->exists();
+                        if ($hasStock) {
+                            throw new \Exception("Cannot deactivate location {$location->id}: it has items with stock quantity greater than zero.");
+                        }
+                    }
                     $location->update($loc);
                 }
             } else {
@@ -52,9 +69,25 @@ class WarehouseRepository
     public function delete($id)
     {
         $warehouse = Warehouse::findOrFail($id);
-        $warehouse->locations()->delete(); // Triggers soft-delete logic for locations
-        $warehouse->delete(); // Triggers soft-delete logic for warehouse
+
+        $hasStock = $warehouse->locations()
+            ->whereHas('whlItems', fn($q) => $q->where('qty', '>', 0))
+            ->exists();
+
+        if ($hasStock) {
+            throw new \Exception('Cannot deactivate warehouse: one or more locations have items with stock quantity greater than zero.');
+        }
+
+        $warehouse->locations()->where('active', 1)->update(['active' => 0]);
+        $warehouse->active = 0;
+        $warehouse->save();
         return true;
+    }
+
+    public function getActiveLocations($id)
+    {
+        $warehouse = Warehouse::findOrFail($id);
+        return $warehouse->locations()->where('active', 1)->orderBy('rack')->orderBy('bin')->get();
     }
 
     public function getWarehouseStructure($id)
@@ -62,7 +95,7 @@ class WarehouseRepository
         $warehouse = Warehouse::findOrFail($id);
 
         // Global scopes on WarehouseLocation and WhlItem already filter active=true
-        $locations = $warehouse->locations()->with(['whlItems.stockItem'])->get();
+        $locations = $warehouse->locations()->where('active', 1)->with(['whlItems.stockItem'])->get();
 
         // Group locations by rack, then collect bins per rack
         $racksMap = [];

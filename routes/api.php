@@ -502,6 +502,7 @@
             Route::post('inventory/transfer', 'InventoryController@transferStock')->name('inventory.transfer');
 
             // Warehouses and Locations CRUD
+            Route::get('warehouses/{id}/stickers', 'WarehouseController@printStickers')->name('warehouses.stickers');
             Route::apiResource('warehouses', 'WarehouseController');
 
             // Warehouse Locations CRUD

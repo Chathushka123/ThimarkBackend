@@ -18,6 +18,7 @@ class StockMaterialRepository
 
     public function create(array $data)
     {
+        $data['active'] = 1;
         return StockMaterial::create($data);
     }
 
@@ -31,7 +32,8 @@ class StockMaterialRepository
     public function delete($id)
     {
         $stockMaterial = StockMaterial::findOrFail($id);
-        $stockMaterial->delete(); // Triggers soft-delete logic (active=false)
+        $stockMaterial->active = 0;
+        $stockMaterial->save();
         return true;
     }
 

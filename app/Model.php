@@ -2,6 +2,7 @@
 
 namespace App;
 
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 
 class Model extends EloquentModel
@@ -42,5 +43,10 @@ class Model extends EloquentModel
     public function modelStockItems()
     {
         return $this->hasMany(ModelStockItem::class, 'model_id');
+    }
+
+    protected function serializeDate(DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
     }
 }

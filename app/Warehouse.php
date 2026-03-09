@@ -2,6 +2,7 @@
 
 namespace App;
 
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 
 class Warehouse extends Model
@@ -31,5 +32,9 @@ class Warehouse extends Model
     public function locations()
     {
         return $this->hasMany(WarehouseLocation::class);
+    }
+    protected function serializeDate(DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
     }
 }

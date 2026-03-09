@@ -496,6 +496,18 @@
             Route::get('Batch/getBatches', 'Api\BatchController@getBatches')->name('getBatches');
             Route::post('Batch/createAndUpdateBatch', 'Api\BatchController@createAndUpdateBatch')->name('createAndUpdateBatch');
             Route::post('Batch/deleteBatch', 'Api\BatchController@deleteBatch')->name('deleteBatch');
+            Route::post('Batch/getSearchByBatch', 'Api\BatchController@getSearchByBatch')->name('getSearchByBatch');
+            Route::post('Batch/getBatchById', 'Api\BatchController@getBatchById')->name('getBatchById');
+
+            // MRN
+            Route::get('Mrn/getMrns', 'Api\MrnController@getMrns')->name('getMrns');
+            Route::post('Mrn/createAndUpdateMrn', 'Api\MrnController@createAndUpdateMrn')->name('createAndUpdateMrn');
+            Route::post('Mrn/deleteMrn', 'Api\MrnController@deleteMrn')->name('deleteMrn');
+
+            // Returnable
+            Route::get('Returnable/getReturnables', 'Api\ReturnableController@getReturnables')->name('getReturnables');
+            Route::post('Returnable/createAndUpdateReturnable', 'Api\ReturnableController@createAndUpdateReturnable')->name('createAndUpdateReturnable');
+            Route::post('Returnable/deleteReturnable', 'Api\ReturnableController@deleteReturnable')->name('deleteReturnable');
 
             // Inventory
             Route::get('inventory/warehouse/{id}', 'InventoryController@getWarehouseStructure')->name('inventory.warehouse.structure');

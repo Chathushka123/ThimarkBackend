@@ -23,15 +23,32 @@ class WarehouseLocationRepository
 
     public function update($id, array $data)
     {
-        $location = WarehouseLocation::findOrFail($id);
+        $location = WarehouseLocation::with('whlItems')->findOrFail($id);
+
+        if (isset($data['active']) && $data['active'] == 0) {
+            $hasStock = $location->whlItems->contains(fn($item) => $item->qty > 0);
+            if ($hasStock) {
+                throw new \Exception('Cannot deactivate location: it has items with stock quantity greater than zero.');
+            }
+        }
+
         $location->update($data);
         return $location->load(['warehouse', 'whlItems']);
     }
 
     public function delete($id)
     {
-        $location = WarehouseLocation::findOrFail($id);
-        $location->delete();
+        $location = WarehouseLocation::with('whlItems')->findOrFail($id);
+
+        $hasStock = $location->whlItems->contains(fn($item) => $item->qty > 0);
+        if ($hasStock) {
+            throw new \Exception('Cannot deactivate location: it has items with stock quantity greater than zero.');
+        }
+
+        if ($location->active == 1) {
+            $location->active = 0;
+            $location->save();
+        }
         return true;
     }
 

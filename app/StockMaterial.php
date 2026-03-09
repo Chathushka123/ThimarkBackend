@@ -42,4 +42,9 @@ class StockMaterial extends Model
     {
         return $this->belongsTo(Uom::class);
     }
+
+    public function warehouseLocations()
+    {
+        return $this->hasMany(WarehouseLocation::class, 'stock_item_id');
+    }
 }

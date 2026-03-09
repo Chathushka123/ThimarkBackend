@@ -2,11 +2,13 @@
 
 namespace App;
 
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 
 class Batch extends Model
 {
     protected $fillable = [
+        'model_id',
         'batch_no',
         'qty_json',
         'active',
@@ -15,6 +17,7 @@ class Batch extends Model
     ];
 
     protected $casts = [
+        'model_id' => 'integer',
         'qty_json' => 'array',
         'active' => 'boolean',
     ];
@@ -22,6 +25,10 @@ class Batch extends Model
     protected static function boot()
     {
         parent::boot();
+
+        static::addGlobalScope('active', function ($query) {
+            $query->where('active', true);
+        });
 
         static::creating(function ($model) {
             if (auth()->check()) {
@@ -35,5 +42,15 @@ class Batch extends Model
                 $model->updated_by = auth()->id();
             }
         });
+    }
+
+    public function model()
+    {
+        return $this->belongsTo(\App\Model::class, 'model_id');
+    }
+
+    protected function serializeDate(DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
     }
 }

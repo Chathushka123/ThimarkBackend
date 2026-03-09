@@ -19,7 +19,16 @@ class GrnController extends Controller
 
     public function store(Request $request)
     {
-        $grn = Grn::create([]); // created_by is set in model boot
+        $request->validate([
+            'rmpono' => 'nullable|string|max:255',
+            'remark' => 'nullable|string',
+        ]);
+
+        $grn = Grn::create([
+            'rmpono' => $request->input('rmpono'),
+            'remark' => $request->input('remark'),
+        ]);
+
         return $grn->load('creator');
     }
 

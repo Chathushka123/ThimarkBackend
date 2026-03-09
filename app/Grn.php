@@ -3,6 +3,7 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use DateTimeInterface;
 
 class Grn extends Model
 {
@@ -10,6 +11,8 @@ class Grn extends Model
 
     protected $fillable = [
         'created_by',
+        'rmpono',
+        'remark',
         'active',
     ];
 
@@ -35,5 +38,10 @@ class Grn extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    protected function serializeDate(DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
     }
 }

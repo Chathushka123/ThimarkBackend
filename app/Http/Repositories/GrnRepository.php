@@ -16,9 +16,12 @@ class GrnRepository
         return Grn::with('creator')->findOrFail($id); // Model global scope already filters active=true
     }
 
-    public function create()
+    public function create($data = [])
     {
-        return Grn::create([]);
+        return Grn::create([
+            'rmpono' => $data['rmpono'] ?? null,
+            'remark' => $data['remark'] ?? null,
+        ]);
     }
 
     public function delete($id)

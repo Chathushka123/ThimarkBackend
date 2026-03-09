@@ -3,6 +3,7 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use DateTimeInterface;
 
 class GrnDetail extends Model
 {
@@ -45,5 +46,10 @@ class GrnDetail extends Model
     public function whlItem()
     {
         return $this->belongsTo(WhlItem::class, 'whl_item_id');
+    }
+
+    protected function serializeDate(DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
     }
 }

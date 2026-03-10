@@ -15,6 +15,7 @@ class MrnDetail extends Model
         'whl_id',
         'qty',
         'issued_qty',
+        'grn_price',
         'active',
         'created_by',
         'updated_by',

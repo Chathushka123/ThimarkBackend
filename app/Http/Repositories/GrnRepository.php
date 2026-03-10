@@ -8,19 +8,21 @@ class GrnRepository
 {
     public function all()
     {
-        return Grn::with('creator')->get(); // Model global scope already filters active=true
+        return Grn::with(['creator', 'warehouse'])->get();
     }
 
     public function find($id)
     {
-        return Grn::with('creator')->findOrFail($id); // Model global scope already filters active=true
+        return Grn::with(['creator', 'warehouse'])->findOrFail($id);
     }
 
     public function create($data = [])
     {
         return Grn::create([
-            'rmpono' => $data['rmpono'] ?? null,
-            'remark' => $data['remark'] ?? null,
+            'warehouse_id' => $data['warehouse_id'] ?? null,
+            'status'       => $data['status'] ?? null,
+            'rmpono'       => $data['rmpono'] ?? null,
+            'remark'       => $data['remark'] ?? null,
         ]);
     }
 

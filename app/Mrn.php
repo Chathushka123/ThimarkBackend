@@ -10,10 +10,14 @@ class Mrn extends Model
     protected $fillable = [
         'batch_id',
         'warehouse_id',
+        'status',
+        'issued_to',
         'active',
         'created_by',
         'updated_by',
     ];
+
+    // Allowed status values: open, finalized, proccesing, complete
 
     protected $casts = [
         'active' => 'boolean',
@@ -45,6 +49,11 @@ class Mrn extends Model
     public function warehouse()
     {
         return $this->belongsTo(Warehouse::class, 'warehouse_id');
+    }
+
+    public function issuedTo()
+    {
+        return $this->belongsTo(User::class, 'issued_to');
     }
 
     public function details()

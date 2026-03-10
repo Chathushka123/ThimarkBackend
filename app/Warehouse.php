@@ -33,6 +33,11 @@ class Warehouse extends Model
     {
         return $this->hasMany(WarehouseLocation::class);
     }
+
+    public function grns()
+    {
+        return $this->hasMany(Grn::class, 'warehouse_id');
+    }
     protected function serializeDate(DateTimeInterface $date)
     {
         return $date->format('Y-m-d H:i:s');

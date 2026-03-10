@@ -6,11 +6,9 @@
     * { margin: 0; padding: 0; }
     body { font-family: sans-serif; margin: 6px; }
 
-    .barcode-font {
-        font-family: 'Libre Barcode 39';
-        font-size: 38px;
-        line-height: 1;
-        text-align: center;
+    .barcode-img {
+        max-width: 100%;
+        height: 50px;
     }
 
     .outer-table {
@@ -95,7 +93,11 @@
             </tr>
             <tr>
                 <td colspan="2" class="bottom-barcode">
-                    <div class="barcode-font">*{{ strtoupper($location->bin ?? '') }}*</div>
+                    @php
+                        $generator = new \Picqer\Barcode\BarcodeGeneratorPNG();
+                        $barcodePng = base64_encode($generator->getBarcode($location->bin ?? '', $generator::TYPE_CODE_39, 2, 50));
+                    @endphp
+                    <img class="barcode-img" src="data:image/png;base64,{{ $barcodePng }}">
                     <div class="bin-human-text">{{ $location->bin ?? '' }}</div>
                 </td>
             </tr>

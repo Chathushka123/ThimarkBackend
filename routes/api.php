@@ -503,6 +503,11 @@
             Route::get('Mrn/getMrns', 'Api\MrnController@getMrns')->name('getMrns');
             Route::post('Mrn/createAndUpdateMrn', 'Api\MrnController@createAndUpdateMrn')->name('createAndUpdateMrn');
             Route::post('Mrn/deleteMrn', 'Api\MrnController@deleteMrn')->name('deleteMrn');
+            Route::post('mrns/createAndUpdate', 'Api\MrnController@createAndUpdate')->name('mrns.createAndUpdate');
+            Route::get('mrns/{id}', 'Api\MrnController@show')->name('mrns.show');
+            Route::post('mrns/finalize', 'Api\MrnController@finalize')->name('mrns.finalize');
+            Route::post('mrns/reopen', 'Api\MrnController@reopen')->name('mrns.reopen');
+            Route::post('mrns/getSearchByMrn', 'Api\MrnController@getSearchByMrn')->name('mrns.getSearchByMrn');
 
             // Returnable
             Route::get('Returnable/getReturnables', 'Api\ReturnableController@getReturnables')->name('getReturnables');
@@ -531,6 +536,11 @@
             Route::apiResource('grn-details', 'GrnDetailController');
 
             // GRNs CRUD
+            Route::post('grns/addTransaction', 'GrnController@addTransaction')->name('grns.addTransaction');
+            Route::post('grns/deleteTransaction', 'GrnController@deleteTransaction')->name('grns.deleteTransaction');
+            Route::post('grns/complete', 'GrnController@updateStatus')->name('grns.updateStatus');
+            Route::get('grns/{id}/transactions', 'GrnController@getTransactions')->name('grns.getTransactions');
+            Route::post('grns/search', 'GrnController@search')->name('grns.search');
             Route::apiResource('grns', 'GrnController')->only(['index', 'show', 'store', 'destroy']);
 
             // MainModel CRUD

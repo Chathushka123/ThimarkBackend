@@ -29,4 +29,29 @@ class MrnController extends Controller
     {
         return $this->repo->deleteMrn($request);
     }
+
+    public function createAndUpdate(Request $request)
+    {
+        return $this->repo->createAndUpdate($request);
+    }
+
+    public function show($id)
+    {
+        return $this->repo->getMrnById($id);
+    }
+
+    public function finalize(Request $request)
+    {
+        return $this->repo->finalizeMrn($request);
+    }
+
+    public function reopen(Request $request)
+    {
+        return $this->repo->reopenMrn($request);
+    }
+
+    public function getSearchByMrn(Request $request)
+    {
+        return $this->repo->getSearchByMrn($request);
+    }
 }

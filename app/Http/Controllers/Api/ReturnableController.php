@@ -20,6 +20,11 @@ class ReturnableController extends Controller
         return $this->repo->getReturnables();
     }
 
+    public function getPendingReturnables(Request $request)
+    {
+        return $this->repo->getPendingReturnables();
+    }
+
     public function createAndUpdateReturnable(Request $request)
     {
         return $this->repo->createAndUpdateReturnable($request);

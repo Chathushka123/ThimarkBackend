@@ -2,15 +2,9 @@
 
 namespace App\Http\Repositories;
 
-use Illuminate\Http\Request;
-use App\Exceptions\ConcurrencyCheckFailedException;
 use PDF;
-// use App\HashStore;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Exception;
-use App\Exceptions\GeneralException;
 use Illuminate\Support\Facades\Log;
 use App\Invoice;
 use App\InvoiceDetail;

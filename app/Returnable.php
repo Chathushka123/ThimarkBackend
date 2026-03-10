@@ -12,6 +12,7 @@ class Returnable extends Model
         'total_qty',
         'issued_qty',
         'return_qty',
+        'stock_item_id',
         'active',
         'created_by',
         'updated_by',
@@ -21,8 +22,13 @@ class Returnable extends Model
         'total_qty' => 'double',
         'issued_qty' => 'double',
         'return_qty' => 'double',
+        'stock_item_id' => 'integer',
         'active' => 'boolean',
     ];
+    public function stockItem()
+    {
+        return $this->belongsTo(StockMaterial::class, 'stock_item_id');
+    }
 
     protected static function boot()
     {
@@ -45,6 +51,16 @@ class Returnable extends Model
     public function issuedTo()
     {
         return $this->belongsTo(User::class, 'issued_to');
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
     protected function serializeDate(DateTimeInterface $date)

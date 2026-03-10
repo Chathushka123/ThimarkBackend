@@ -511,6 +511,7 @@
 
             // Returnable
             Route::get('Returnable/getReturnables', 'Api\ReturnableController@getReturnables')->name('getReturnables');
+            Route::get('returnable/getPendingReturnables', 'Api\ReturnableController@getPendingReturnables')->name('getPendingReturnables');
             Route::post('Returnable/createAndUpdateReturnable', 'Api\ReturnableController@createAndUpdateReturnable')->name('createAndUpdateReturnable');
             Route::post('Returnable/deleteReturnable', 'Api\ReturnableController@deleteReturnable')->name('deleteReturnable');
 

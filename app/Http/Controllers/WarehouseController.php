@@ -35,6 +35,7 @@ class WarehouseController extends Controller
             'locations.*.rack' => 'nullable|string|max:50',
             'locations.*.bin' => 'nullable|string|max:50',
             'locations.*.active' => 'nullable|int',
+            'locations.*.stock_item_id' => 'nullable|int',
         ]);
 
         return response()->json($this->repository->create($validated), 201);
@@ -51,6 +52,7 @@ class WarehouseController extends Controller
             'locations.*.rack' => 'nullable|string|max:50',
             'locations.*.bin' => 'nullable|string|max:50',
             'locations.*.active' => 'nullable|int',
+            'locations.*.stock_item_id' => 'nullable|int',
         ]);
 
         return response()->json($this->repository->update($id, $validated));

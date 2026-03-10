@@ -13,6 +13,20 @@ class ReturnableRepository
         return Returnable::with('issuedTo')->where('active', true)->orderBy('id', 'desc')->get();
     }
 
+    public function getPendingReturnables()
+    {
+        return Returnable::with([
+            'stockItem:id,name,code',
+            'issuedTo:id,name,email',
+            'createdBy:id,name,email',
+            'updatedBy:id,name,email',
+        ])
+            ->where('active', true)
+            ->whereColumn('issued_qty', '>', 'return_qty')
+            ->orderBy('id', 'desc')
+            ->get();
+    }
+
     public function createAndUpdateReturnable($request)
     {
         $validator = Validator::make($request->all(), [

@@ -54,4 +54,10 @@ class MrnController extends Controller
     {
         return $this->repo->getSearchByMrn($request);
     }
+
+    public function getMrnPrint(Request $request)
+    {
+        $id = $request->input('id');
+        return $this->repo->getMrnPrint($id);
+    }
 }

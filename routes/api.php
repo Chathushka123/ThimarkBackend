@@ -509,6 +509,7 @@
             Route::post('mrns/finalize', 'Api\MrnController@finalize')->name('mrns.finalize');
             Route::post('mrns/reopen', 'Api\MrnController@reopen')->name('mrns.reopen');
             Route::post('mrns/getSearchByMrn', 'Api\MrnController@getSearchByMrn')->name('mrns.getSearchByMrn');
+            Route::post('mrns/getMrnPrint', 'Api\MrnController@getMrnPrint')->name('mrns.getMrnPrint');
 
             // Returnable
             Route::get('Returnable/getReturnables', 'Api\ReturnableController@getReturnables')->name('getReturnables');

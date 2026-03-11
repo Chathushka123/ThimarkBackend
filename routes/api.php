@@ -520,6 +520,10 @@
             // Inventory
             Route::get('inventory/warehouse/{id}', 'InventoryController@getWarehouseStructure')->name('inventory.warehouse.structure');
             Route::post('inventory/transfer', 'InventoryController@transferStock')->name('inventory.transfer');
+            Route::get('inventory/balance', 'InventoryController@getBalance')->name('inventory.balance');
+            Route::post('inventory/issue', 'InventoryController@issueStock')->name('inventory.issue');
+            Route::delete('mrn-issuance/delete/{mrn_detail_id}', 'InventoryController@deleteIssuance')->name('mrn-issuance.delete');
+            Route::post('mrn-issuance/complete', 'InventoryController@completeIssuance')->name('mrn-issuance.complete');
 
             // Warehouses and Locations CRUD
             Route::get('warehouses/{id}/stickers', 'WarehouseController@printStickers')->name('warehouses.stickers');

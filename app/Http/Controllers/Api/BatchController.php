@@ -39,4 +39,9 @@ class BatchController extends Controller
     {
         return $this->repo->getBatchById($request);
     }
+
+    public function getCostSheetDataById(Request $request)
+    {
+        return $this->repo->getCostSheetDataById($request);
+    }
 }

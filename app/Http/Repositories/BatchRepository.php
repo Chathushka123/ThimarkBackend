@@ -4,6 +4,7 @@ namespace App\Http\Repositories;
 
 use App\Batch;
 use Exception;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -123,6 +124,63 @@ class BatchRepository
             return response()->json([
                 'status' => 'success',
                 'data'   => $batch,
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Batch not found.',
+            ], 404);
+        }
+    }
+
+    public function getCostSheetDataById($request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|integer|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $validator->errors(),
+            ], 400);
+        }
+
+        try {
+            $batch = Batch::with([
+                'model.modelStockItems.stockItem:id,name,code,unit_price,uom_id',
+                'model.mainModel:id,name',
+                'mrns.warehouse:id,name',
+                'mrns.issuedTo:id,name,email',
+            ])
+                ->where('id', $request->input('id'))
+                ->where('active', true)
+                ->firstOrFail();
+
+            $mrnSummary = DB::table('mrn_details')
+                ->join('mrns', 'mrns.id', '=', 'mrn_details.mrn_id')
+                ->join('stock_materials', 'stock_materials.id', '=', 'mrn_details.stock_item_id')
+                // ->leftJoin('model_stock_items', 'model_stock_items.stock_item_id', '=', 'mrn_details.stock_item_id')
+                ->where('mrns.batch_id', $batch->id)
+                ->where('mrns.active', true)
+                ->where('mrn_details.active', true)
+                ->select(
+                    'mrn_details.stock_item_id',
+                    'stock_materials.name as stock_item_name',
+                    'stock_materials.code as stock_item_code',
+                    'stock_materials.category',
+                    // 'model_stock_items.consumption as req_consumption',
+                    DB::raw('SUM(mrn_details.qty) as total_qty'),
+                    DB::raw('SUM(mrn_details.issued_qty) as total_issued_qty'),
+                    DB::raw('AVG(mrn_details.grn_price) as avg_grn_price'),
+                )
+                ->groupBy('mrn_details.stock_item_id', 'stock_materials.name', 'stock_materials.code')
+                ->get();
+
+            return response()->json([
+                'status'      => 'success',
+                'data'        => $batch,
+                'mrn_summary' => $mrnSummary,
             ], 200);
         } catch (Exception $e) {
             return response()->json([

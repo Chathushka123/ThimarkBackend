@@ -49,6 +49,11 @@ class Batch extends Model
         return $this->belongsTo(\App\Model::class, 'model_id');
     }
 
+    public function mrns()
+    {
+        return $this->hasMany(Mrn::class, 'batch_id');
+    }
+
     protected function serializeDate(DateTimeInterface $date)
     {
         return $date->format('Y-m-d H:i:s');

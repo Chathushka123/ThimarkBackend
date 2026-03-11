@@ -120,7 +120,7 @@ class MrnRepository
             'mrn_id' => 'nullable|integer|min:1',
             'warehouse_id' => 'required|integer|exists:warehouses,id',
             'batch_id' => 'required|integer|exists:batches,id',
-            'status' => 'required|string|in:open,finalized,processing,complete',
+            'status' => 'required|string|in:open,finalized,processing,  ',
             'mrn_details' => 'required|array|min:1',
             'mrn_details.*.stock_item_id' => 'required|integer|exists:stock_materials,id',
             'mrn_details.*.qty' => 'required|numeric|min:0',

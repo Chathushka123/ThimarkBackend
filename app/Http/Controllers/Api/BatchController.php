@@ -44,4 +44,9 @@ class BatchController extends Controller
     {
         return $this->repo->getCostSheetDataById($request);
     }
+
+    public function getBatchComparisonByModel(Request $request)
+    {
+        return $this->repo->getBatchComparisonByModel($request);
+    }
 }

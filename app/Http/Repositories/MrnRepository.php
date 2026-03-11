@@ -7,6 +7,8 @@ use App\MrnDetail;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use PDF;
+use Picqer\Barcode\BarcodeGeneratorPNG;
 
 class MrnRepository
 {
@@ -301,5 +303,26 @@ class MrnRepository
             'status' => 'success',
             'data'   => $results,
         ], 200);
+    }
+
+    public function getMrnPrint($id)
+    {
+        $mrn = Mrn::with(['batch', 'batch.model', 'warehouse', 'details.stockItem'])->findOrFail($id);
+
+        // Generate barcode
+        $generator = new BarcodeGeneratorPNG();
+        $barcode = base64_encode($generator->getBarcode($mrn->id, $generator::TYPE_CODE_128, 2, 50));
+
+        $data = [
+            'mrn' => $mrn,
+            'barcode' => $barcode
+        ];
+
+        $pdf = PDF::loadView('print.mrn', $data);
+        // print_r($pdf);
+        // Set custom paper size - Half A4 height (210mm x 148.5mm)
+        // $pdf->setPaper([0, 0, 595.276, 420.945], 'portrait');
+        $pdf->setPaper([0, 0, 595.276, 420.945], 'landscape');
+        return $pdf->stream('mrn' . $id . '.pdf');
     }
 }

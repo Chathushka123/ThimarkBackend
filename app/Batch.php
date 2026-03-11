@@ -27,7 +27,7 @@ class Batch extends Model
         parent::boot();
 
         static::addGlobalScope('active', function ($query) {
-            $query->where('active', true);
+            $query->where('batches.active', true);
         });
 
         static::creating(function ($model) {

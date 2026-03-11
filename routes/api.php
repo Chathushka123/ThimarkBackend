@@ -499,6 +499,7 @@
             Route::post('Batch/getSearchByBatch', 'Api\BatchController@getSearchByBatch')->name('getSearchByBatch');
             Route::post('Batch/getBatchById', 'Api\BatchController@getBatchById')->name('getBatchById');
             Route::post('Batch/getCostSheetDataById', 'Api\BatchController@getCostSheetDataById')->name('getCostSheetDataById');
+            Route::post('Batch/getBatchComparisonByModel', 'Api\BatchController@getBatchComparisonByModel')->name('getBatchComparisonByModel');
 
             // MRN
             Route::get('Mrn/getMrns', 'Api\MrnController@getMrns')->name('getMrns');

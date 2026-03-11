@@ -95,7 +95,7 @@ class WarehouseRepository
         $warehouse = Warehouse::findOrFail($id);
 
         // Global scopes on WarehouseLocation and WhlItem already filter active=true
-        $locations = $warehouse->locations()->where('active', 1)->with(['whlItems.stockItem'])->get();
+        $locations = $warehouse->locations()->where('active', 1)->with(['whlItems' => fn($q) => $q->where('qty', '>', 0), 'whlItems.stockItem'])->get();
 
         // Group locations by rack, then collect bins per rack
         $racksMap = [];

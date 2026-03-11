@@ -67,6 +67,7 @@ class StockMaterialController extends Controller
     public function search(Request $request)
     {
         $q = $request->query('q', '');
+        $wh = $request->query('wh', '');
         return StockMaterial::where('name', 'like', "%{$q}%")
             ->orWhere('code', 'like', "%{$q}%")
             ->pluck('id');

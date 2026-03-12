@@ -127,11 +127,11 @@ $navigator_json = '
         
 
         {
-            "caption":"Cost Sheet",
+            "caption":"CostSheet View",
             "icon":"fas fa-file-invoice-dollar",
             "type":"node",
             "permitted" : 0,
-            "path":"/batchCreation"
+            "path":"/costSheetView"
          }
         
 

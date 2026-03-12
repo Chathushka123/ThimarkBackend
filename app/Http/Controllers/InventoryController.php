@@ -360,7 +360,7 @@ class InventoryController extends Controller
 
         try {
             $mrn = Mrn::where('active', true)->findOrFail($validated['mrn_id']);
-            
+
             $mrn->status = 'complete';
             $mrn->save();
 

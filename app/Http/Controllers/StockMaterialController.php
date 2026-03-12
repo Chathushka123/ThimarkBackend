@@ -48,7 +48,7 @@ class StockMaterialController extends Controller
             'size' => 'nullable|array',
             'unit_price' => 'nullable|numeric',
             'uom_id' => 'sometimes|required|exists:uoms,id',
-            'category' => 'nullable|in:material,consumble,returnable',
+            'category' => 'nullable|in:material,consumable,returnable',
         ]);
         if (!isset($validated['size'])) {
             $validated['size'] = $stockMaterial->size ?? ['base_size'];

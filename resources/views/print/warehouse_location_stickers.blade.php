@@ -87,7 +87,7 @@
                 </td>
                 <td class="top-qr">
                     {{-- {!! QrCode::format('svg')->size(65)->generate($location->bin ?? '') !!} --}}
-                   <img src="data:image/png;base64, {!! base64_encode(QrCode::format('svg')->size(60)->generate($location->bin ?? '')) !!} ">
+                   <img src="data:image/png;base64, {!! base64_encode(QrCode::format('svg')->size(60)->generate($location->id ?? '')) !!} ">
 
                 </td>
             </tr>
@@ -95,10 +95,10 @@
                 <td colspan="2" class="bottom-barcode">
                     @php
                         $generator = new \Picqer\Barcode\BarcodeGeneratorPNG();
-                        $barcodePng = base64_encode($generator->getBarcode($location->bin ?? '', $generator::TYPE_CODE_39, 2, 50));
+                        $barcodePng = base64_encode($generator->getBarcode($location->id ?? '', $generator::TYPE_CODE_39, 2, 50));
                     @endphp
                     <img class="barcode-img" src="data:image/png;base64,{{ $barcodePng }}">
-                    <div class="bin-human-text">{{ $location->bin ?? '' }}</div>
+                    <div class="bin-human-text">{{ $location->id ?? '' }}</div>
                 </td>
             </tr>
         </table>

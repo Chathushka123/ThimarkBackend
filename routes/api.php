@@ -1,5 +1,4 @@
-
-    <?php
+<?php
 
     use Illuminate\Support\Facades\Route;
 
@@ -528,6 +527,18 @@
 
             // ModelStockItem CRUD
             Route::apiResource('model-stock-items', 'ModelStockItemController');
+
+            // Supplier APIs
+            Route::get('suppliers', 'Api\SupplierController@index');
+            Route::get('suppliers/{id}', 'Api\SupplierController@show');
+            Route::post('suppliers', 'Api\SupplierController@store');
+            Route::put('suppliers/{id}', 'Api\SupplierController@update');
+
+            // Purchase Order APIs
+            Route::get('purchase-orders', 'Api\PurchaseOrderController@index');
+            Route::get('purchase-orders/{id}', 'Api\PurchaseOrderController@show');
+            Route::post('purchase-orders', 'Api\PurchaseOrderController@store');
+            Route::put('purchase-orders/{id}', 'Api\PurchaseOrderController@update');
         });
     });
 

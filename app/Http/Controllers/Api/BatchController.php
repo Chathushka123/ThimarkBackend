@@ -29,4 +29,24 @@ class BatchController extends Controller
     {
         return $this->repo->deleteBatch($request);
     }
+
+    public function getSearchByBatch(Request $request)
+    {
+        return $this->repo->getSearchByBatch($request);
+    }
+
+    public function getBatchById(Request $request)
+    {
+        return $this->repo->getBatchById($request);
+    }
+
+    public function getCostSheetDataById(Request $request)
+    {
+        return $this->repo->getCostSheetDataById($request);
+    }
+
+    public function getBatchComparisonByModel(Request $request)
+    {
+        return $this->repo->getBatchComparisonByModel($request);
+    }
 }

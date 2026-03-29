@@ -3,6 +3,7 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use DateTimeInterface;
 
 class Grn extends Model
 {
@@ -10,6 +11,10 @@ class Grn extends Model
 
     protected $fillable = [
         'created_by',
+        'warehouse_id',
+        'status',
+        'rmpono',
+        'remark',
         'active',
     ];
 
@@ -35,5 +40,20 @@ class Grn extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function warehouse()
+    {
+        return $this->belongsTo(Warehouse::class, 'warehouse_id');
+    }
+
+    public function details()
+    {
+        return $this->hasMany(GrnDetail::class, 'grn_id');
+    }
+
+    protected function serializeDate(DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
     }
 }

@@ -106,11 +106,11 @@ $navigator_json = '
             "path":"/mrnCreation"
          },
                  {
-            "caption":"MRN Issueance",
+            "caption":"MRN Issuance",
             "icon":"fas fa-hand-holding",
             "type":"node",
             "permitted" : 0,
-            "path":"/mrnIssueance"
+            "path":"/mrnIssuance"
          }
 
 
@@ -127,11 +127,11 @@ $navigator_json = '
 
 
         {
-            "caption":"Cost Sheet",
+            "caption":"CostSheet View",
             "icon":"fas fa-file-invoice-dollar",
             "type":"node",
             "permitted" : 0,
-            "path":"/batchCreation"
+            "path":"/costSheetView"
          }
 
 

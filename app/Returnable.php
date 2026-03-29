@@ -2,33 +2,37 @@
 
 namespace App;
 
-use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
+use DateTimeInterface;
 
-class Batch extends Model
+class Returnable extends Model
 {
     protected $fillable = [
-        'model_id',
-        'batch_no',
-        'qty_json',
+        'issued_to',
+        'total_qty',
+        'issued_qty',
+        'return_qty',
+        'stock_item_id',
         'active',
         'created_by',
         'updated_by',
     ];
 
     protected $casts = [
-        'model_id' => 'integer',
-        'qty_json' => 'array',
+        'total_qty' => 'double',
+        'issued_qty' => 'double',
+        'return_qty' => 'double',
+        'stock_item_id' => 'integer',
         'active' => 'boolean',
     ];
+    public function stockItem()
+    {
+        return $this->belongsTo(StockMaterial::class, 'stock_item_id');
+    }
 
     protected static function boot()
     {
         parent::boot();
-
-        static::addGlobalScope('active', function ($query) {
-            $query->where('batches.active', true);
-        });
 
         static::creating(function ($model) {
             if (auth()->check()) {
@@ -44,14 +48,19 @@ class Batch extends Model
         });
     }
 
-    public function model()
+    public function issuedTo()
     {
-        return $this->belongsTo(\App\Model::class, 'model_id');
+        return $this->belongsTo(User::class, 'issued_to');
     }
 
-    public function mrns()
+    public function createdBy()
     {
-        return $this->hasMany(Mrn::class, 'batch_id');
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
     protected function serializeDate(DateTimeInterface $date)

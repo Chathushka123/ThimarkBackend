@@ -18,6 +18,7 @@ class StockMaterialRepository
 
     public function create(array $data)
     {
+        $data['active'] = 1;
         return StockMaterial::create($data);
     }
 
@@ -31,14 +32,28 @@ class StockMaterialRepository
     public function delete($id)
     {
         $stockMaterial = StockMaterial::findOrFail($id);
-        $stockMaterial->delete(); // Triggers soft-delete logic (active=false)
+        $stockMaterial->active = 0;
+        $stockMaterial->save();
         return true;
     }
 
-    public function search(string $q): \Illuminate\Support\Collection
+    public function search(string $q, ?string $wh = null): \Illuminate\Support\Collection
     {
-        return StockMaterial::where('name', 'like', "%{$q}%")
-            ->orWhere('code', 'like', "%{$q}%")
-            ->pluck('id');
+        $query = StockMaterial::query()
+            ->where(function ($query) use ($q) {
+                $query->where('stock_materials.name', 'like', "%{$q}%")
+                      ->orWhere('stock_materials.code', 'like', "%{$q}%");
+            });
+
+        if ($wh) {
+            $query->join('whl_items', 'whl_items.stock_item_id', '=', 'stock_materials.id')
+                  ->join('warehouse_locations', 'warehouse_locations.id', '=', 'whl_items.whl_id')
+                  ->join('warehouses', 'warehouses.id', '=', 'warehouse_locations.warehouse_id')
+                  ->where('warehouses.id', $wh)
+                  ->select('stock_materials.*')
+                  ->distinct();
+        }
+
+        return $query->pluck('stock_materials.id');
     }
 }

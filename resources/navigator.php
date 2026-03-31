@@ -32,6 +32,13 @@ $navigator_json = '
             "type":"node",
             "permitted" : 0,
             "path":"/model"
+         },
+         {
+            "caption":"Supplier",
+            "icon":"fas fa-cog",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/suppliers"
          }
 
 
@@ -138,7 +145,7 @@ $navigator_json = '
        ]
     },
 
-            {
+   {
        "caption":"Purchase Orders",
        "id":"purchase-order-management",
        "icon":"fas fa-calculator",

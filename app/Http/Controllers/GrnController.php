@@ -68,7 +68,7 @@ class GrnController extends Controller
                     'available_qty'  => $detail->available_qty,
                     'grn_price'      => $detail->grn_price,
                     'stock_item_id'  => optional($detail->whlItem)->stock_item_id,
-                    'stock_item_name' => optional(optional($detail->whlItem)->stockItem)->name,
+                    'stock_item_name' => optional(optional($detail->whlItem)->stockItem)->code . "(" . optional(optional($detail->whlItem)->stockItem)->name . ")",
                     'location_id'    => optional($detail->whlItem)->whl_id,
                     'rack'           => optional(optional($detail->whlItem)->warehouseLocation)->rack,
                     'location'       => optional(optional($detail->whlItem)->warehouseLocation)->bin,

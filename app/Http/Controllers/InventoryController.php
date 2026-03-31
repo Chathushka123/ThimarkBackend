@@ -404,7 +404,7 @@ class InventoryController extends Controller
                 'data' => $returnable
             ], 201);
         } catch (\Exception $e) {
-            DB::rollBack();
+            //DB::rollBack();
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage()
@@ -461,6 +461,112 @@ class InventoryController extends Controller
                 'status' => 'success',
                 'message' => 'Returnable record updated successfully',
                 'data' => $returnable
+            ], 200);
+        } catch (\Exception $e) {
+            //DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getLocationAvaileMaterial(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'whl_id' => 'required|integer|exists:warehouse_locations,id',
+            ]);
+
+            $materials = DB::table('whl_items')->where('whl_id', $validated['whl_id'])
+                ->join('stock_materials', 'whl_items.stock_item_id', '=', 'stock_materials.id')
+                ->select(
+                    'whl_items.stock_item_id',
+                    'stock_materials.name as material_name',
+                    'stock_materials.code as material_code'
+                )
+                ->where('whl_items.active', true)
+                ->where('stock_materials.active', true)
+                ->where('whl_items.qty', '>', 0)
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Returnable record updated successfully',
+                'data' => $materials
+            ], 200);
+        } catch (\Exception $e) {
+            // DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function transferStockItem(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+
+            $validated = $request->validate([
+
+                'from_id' => 'required|integer|exists:warehouse_locations,id',
+                'to_id' => 'required|integer|exists:warehouse_locations,id',
+                'material_id' => 'required|integer|exists:stock_materials,id',
+                'qty' => 'required|numeric|min:0.001',
+            ]);
+            $qty = floatval($validated['qty']);
+
+            //Reduce Qty
+            $stockItems = \App\WhlItem::where('whl_id', $validated['from_id'])
+                ->where('stock_item_id', $validated['material_id'])
+                ->where('active', true)
+                ->where('qty', '>', 0)
+                ->orderBy('id', 'asc')
+                ->get();
+
+            foreach ($stockItems as $rec) {
+                if ($qty > floatval($rec->qty)) {
+                    $qty -= floatval($rec->qty);
+                    $rec->qty = 0;
+                    $rec->save();
+                } else {
+                    $rec->qty = floatval($rec->qty) - $qty;
+                    $rec->save();
+                    $qty = 0;
+                }
+            }
+            if ($qty > 0) {
+                throw new \Exception('Not enough quantity available to transfer. Remaining qty: ' . $qty);
+            }
+            // Increase Qty
+
+            $stockItemsAvailble = \App\WhlItem::where('whl_id', $validated['to_id'])
+                ->where('stock_item_id', $validated['material_id'])
+                ->where('active', true)
+                ->orderBy('id', 'desc')
+                ->get();
+
+            if (sizeof($stockItemsAvailble) > 0) {
+                \App\WhlItem::where('id', $stockItemsAvailble[0]->id)->update([
+                    'qty' => floatval($stockItemsAvailble[0]->qty) + floatval($validated['qty'])
+                ]);
+            } else {
+                \App\WhlItem::create([
+                    'whl_id' => $validated['to_id'],
+                    'stock_item_id' => $validated['material_id'],
+                    'qty' => floatval($validated['qty']),
+                    'active' => true
+                ]);
+            }
+
+
+            DB::commit();
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Returnable record updated successfully',
+                'data' => true
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();

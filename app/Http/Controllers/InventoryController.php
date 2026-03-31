@@ -384,4 +384,90 @@ class InventoryController extends Controller
             ], 500);
         }
     }
+
+    // Retiurnable save
+    public function saveReturnable(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'issued_to' => 'required|integer|exists:users,id',
+                'total_qty' => 'required|numeric|min:0.001',
+                'issued_qty' => 'required|numeric|min:0',
+                'return_qty' => 'required|numeric|min:0',
+                'stock_item_id' => 'required|integer|exists:stock_materials,id',
+            ]);
+
+            $returnable = \App\Returnable::create($validated);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Returnable record created successfully',
+                'data' => $returnable
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getReturnable(Request $request)
+    {
+        $validated = $request->validate([
+            'issued_to' => 'required|integer|exists:users,id',
+        ]);
+
+        $returnables = \App\Returnable::where('issued_to', $validated['issued_to'])
+            ->join('stock_materials', 'returnables.stock_item_id', '=', 'stock_materials.id')
+            ->select(
+                'returnables.*',
+                'stock_materials.name as material_name',
+                'stock_materials.code as material_code'
+            )
+            ->where('returnables.active', true)
+            ->where('stock_materials.active', true)
+            ->whereColumn('returnables.issued_qty', '>', 'returnables.return_qty')
+            ->with('stockItem')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $returnables
+        ], 200);
+    }
+
+    public function updateReturnable(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'id' => 'required|integer|exists:returnables,id',
+                'return_qty' => 'required|numeric|min:0',
+            ]);
+
+            $returnable = \App\Returnable::findOrFail($validated['id']);
+
+            if ($validated['return_qty'] > $returnable->issued_qty) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Return quantity cannot exceed issued quantity'
+                ], 422);
+            }
+
+            $returnable->return_qty = $validated['return_qty'];
+            $returnable->save();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Returnable record updated successfully',
+                'data' => $returnable
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

@@ -527,6 +527,11 @@
             Route::delete('mrn-issuance/delete/{mrn_detail_id}', 'InventoryController@deleteIssuance')->name('mrn-issuance.delete');
             Route::post('mrn-issuance/complete', 'InventoryController@completeIssuance')->name('mrn-issuance.complete');
 
+            // Returnable
+            Route::post('inventory/saveReturnable', 'InventoryController@saveReturnable')->name('inventory.saveReturnable');
+            Route::post('inventory/getReturnable', 'InventoryController@getReturnable')->name('inventory.getReturnable');
+            Route::post('inventory/updateReturnable', 'InventoryController@updateReturnable')->name('inventory.updateReturnable');
+
             // Warehouses and Locations CRUD
             Route::get('warehouses/{id}/stickers', 'WarehouseController@printStickers')->name('warehouses.stickers');
             Route::apiResource('warehouses', 'WarehouseController');

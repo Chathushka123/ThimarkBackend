@@ -75,12 +75,19 @@ $navigator_json = '
             "permitted" : 0,
             "path":"/inventory"
          },
-                 {
+         {
             "caption":"GRN",
             "icon":"fas fa-dolly",
             "type":"node",
             "permitted" : 0,
             "path":"/grn"
+         },
+         {
+            "caption":"Returnable",
+            "icon":"fas fa-undo",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/returnable"
          }
 
 

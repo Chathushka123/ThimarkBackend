@@ -3,7 +3,7 @@
 namespace App\Http\Repositories;
 
 use App\PurchaseOrder;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use Exception;
 
 class PurchaseOrderRepository
@@ -20,33 +20,42 @@ class PurchaseOrderRepository
 
     public function createPurchaseOrder($data)
     {
-
         try {
-            // Create PO without po_number first
+            $nextId = (DB::table('purchase_orders')->max('id') ?? 0) + 1;
+            $po_num = sprintf('PO-%s-%06d', date('Y'), $nextId);
+
             $po = PurchaseOrder::create([
-                'supplier_id' => $data['supplier_id'],
-                'order_date' => $data['order_date'],
+                'po_number'              => $po_num,
+                'supplier_id'            => $data['supplier_id'],
+                'order_date'             => $data['order_date'],
                 'expected_delivery_date' => $data['expected_delivery_date'] ?? null,
-                'status' => $data['status'],
-                'subtotal' => $data['subtotal'],
-                'discount' => $data['discount'],
-                'tax' => $data['tax'],
-                'shipping_cost' => $data['shipping_cost'],
-                'total_amount' => $data['total_amount'],
-                'notes' => $data['notes'] ?? null,
+                'status'                 => strtoupper($data['status']),
+                'subtotal'               => $data['subtotal'],
+                'discount'               => $data['discount'],
+                'tax'                    => $data['tax'],
+                'shipping_cost'          => $data['shipping_cost'],
+                'total_amount'           => $data['total_amount'],
+                'notes'                  => $data['notes'] ?? null,
             ]);
 
-            // Generate po_number: PO-{year}-{supplier_id}-{id}
-            $year = date('Y');
-            $supplierId = $po->supplier_id;
-            $id = $po->id;
-            $poNumber = sprintf('PO-%s-%s-%06d', $year, $supplierId, $id);
-            $po->po_number = $poNumber;
-            $po->save();
+            // Create PO items
+            foreach ($data['items'] as $item) {
+                $po->items()->create([
+                    'material_id'            => $item['material_id'],
+                    'quantity'               => $item['quantity'],
+                    'unit_price'             => $item['unit_price'],
+                    'expected_delivery_date' => $item['expected_delivery_date'] ?? null,
+                ]);
+            }
 
-            return $po;
+            return $po->load(['supplier', 'items']);
         } catch (\Exception $e) {
-            return @e;
+            // Return error details for debugging
+            return response()->json([
+                'error' => true,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ], 500);
         }
     }
 
@@ -56,7 +65,43 @@ class PurchaseOrderRepository
         if (!$po) {
             return null;
         }
-        $po->update($data);
-        return $po;
+
+        $po->update(array_filter([
+            'supplier_id'            => $data['supplier_id'] ?? null,
+            'order_date'             => $data['order_date'] ?? null,
+            'expected_delivery_date' => $data['expected_delivery_date'] ?? null,
+            'status'                 => $data['status'] ?? null,
+            'subtotal'               => $data['subtotal'] ?? null,
+            'discount'               => $data['discount'] ?? null,
+            'tax'                    => $data['tax'] ?? null,
+            'shipping_cost'          => $data['shipping_cost'] ?? null,
+            'total_amount'           => $data['total_amount'] ?? null,
+            'notes'                  => $data['notes'] ?? null,
+        ], fn($v) => !is_null($v)));
+
+        // Handle items by _rowstate
+        foreach ($data['items'] ?? [] as $item) {
+            $rowstate = $item['_rowstate'] ?? null;
+
+            if ($rowstate === 'NEW') {
+                $po->items()->create([
+                    'material_id'            => $item['material_id'],
+                    'quantity'               => $item['quantity'],
+                    'unit_price'             => $item['unit_price'],
+                    'expected_delivery_date' => $item['expected_delivery_date'] ?? null,
+                ]);
+            } elseif ($rowstate === 'MODIFIED' && !empty($item['id'])) {
+                $po->items()->where('id', $item['id'])->update([
+                    'material_id'            => $item['material_id'],
+                    'quantity'               => $item['quantity'],
+                    'unit_price'             => $item['unit_price'],
+                    'expected_delivery_date' => $item['expected_delivery_date'] ?? null,
+                ]);
+            } elseif ($rowstate === 'DELETED' && !empty($item['id'])) {
+                $po->items()->where('id', $item['id'])->delete();
+            }
+        }
+
+        return $po->load(['supplier', 'items']);
     }
 }

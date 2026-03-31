@@ -66,7 +66,7 @@ class PurchaseOrderController extends Controller
     // Update purchase order
     public function update(Request $request, $id)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'supplier_id'              => 'sometimes|required|exists:suppliers,id',
             'order_date'               => 'sometimes|required|date_format:Y-m-d',
             'expected_delivery_date'   => 'nullable|date_format:Y-m-d',
@@ -79,13 +79,39 @@ class PurchaseOrderController extends Controller
             'notes'                    => 'nullable|string',
             'items'                    => 'sometimes|array',
             'items.*.id'               => 'nullable|integer',
-            'items.*.material_id'      => 'required_with:items|exists:stock_materials,id',
-            'items.*.quantity'         => 'required_with:items|numeric|min:0',
-            'items.*.unit_price'       => 'required_with:items|numeric|min:0',
-            'items.*.total'            => 'required_with:items|numeric|min:0',
+            'items.*.material_id'      => 'nullable|exists:stock_materials,id',
+            'items.*.quantity'         => 'nullable|numeric|min:0',
+            'items.*.unit_price'       => 'nullable|numeric|min:0',
+            'items.*.total'            => 'nullable|numeric|min:0',
             'items.*.expected_delivery_date' => 'nullable|date_format:Y-m-d',
             'items.*._rowstate'        => 'required_with:items|string|in:NEW,UPDATED,DELETED,MODIFIED,POPULATED',
         ]);
+
+        $validator->after(function ($v) use ($request) {
+            foreach ($request->input('items', []) as $index => $item) {
+                if (($item['_rowstate'] ?? '') !== 'DELETED') {
+                    if (empty($item['material_id'])) {
+                        $v->errors()->add("items.$index.material_id", 'The material id field is required.');
+                    }
+                    if (!isset($item['quantity']) || $item['quantity'] === '') {
+                        $v->errors()->add("items.$index.quantity", 'The quantity field is required.');
+                    }
+                    if (!isset($item['unit_price']) || $item['unit_price'] === '') {
+                        $v->errors()->add("items.$index.unit_price", 'The unit price field is required.');
+                    }
+                    if (!isset($item['total']) || $item['total'] === '') {
+                        $v->errors()->add("items.$index.total", 'The total field is required.');
+                    }
+                }
+            }
+        });
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $validated = $validator->validated();
+
         try {
             $po = $this->repo->updatePurchaseOrder($validated, $id);
             if (!$po) {

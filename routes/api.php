@@ -33,6 +33,8 @@
             // Auth
             Route::get('user', 'Api\AuthController@user')->name('user.get');
             Route::post('logout', 'Api\AuthController@logout')->name('logout');
+            Route::get('user/stickers/{id}', 'Api\UserController@printStickers')->name('user.printStickers');
+
 
             // Company
             Route::get('companies/{company}', 'Api\CompanyController@show')->name('companies.show');
@@ -534,7 +536,10 @@
 
             // Stock Materials CRUD
             Route::get('stock-materials/search', 'StockMaterialController@search');
+            Route::get('stock-materials/stickers', 'StockMaterialController@printStickers')->name('material.stickers');
+            Route::get('stock-materials/stickers/{ids}', 'StockMaterialController@printStickersByIds')->name('material.stickersbyIds');
             Route::apiResource('stock-materials', 'StockMaterialController');
+
 
             // WHL Items CRUD
             Route::apiResource('whl-items', 'WhlItemController');

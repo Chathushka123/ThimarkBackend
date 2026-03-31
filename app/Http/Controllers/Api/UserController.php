@@ -8,6 +8,7 @@ use App\Http\Resources\UserResource;
 use App\Http\Repositories\UserRepository;
 use App\Http\Repositories\Utilities;
 use Illuminate\Http\Request;
+use PDF;
 
 class UserController extends Controller
 {
@@ -24,5 +25,13 @@ class UserController extends Controller
         $password = $request->password;
         $updated_at = $request->updated_at;
         return $this->repo->changePassword($user_id, $password, $updated_at);
+    }
+
+    public function printStickers($id)
+    {
+        $users = User::where('id', '=', $id)->get();
+        $pdf = PDF::loadView('print.users_stickers', ['users' => $users]);
+        $pdf->setPaper('A4', 'portrait');
+        return $pdf->stream('users_stickers_' . date('Y_m_d_H_i_s') . '.pdf');
     }
 }

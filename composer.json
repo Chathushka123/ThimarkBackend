@@ -18,7 +18,7 @@
         "laravel/sanctum": "^3.2",
         "laravel/tinker": "^2.8",
         "maatwebsite/excel": "*",
-        "picqer/php-barcode-generator": "^2.4",
+        "picqer/php-barcode-generator": "^3.2",
         "simplesoftwareio/simple-qrcode": "^4.2"
     },
     "require-dev": {

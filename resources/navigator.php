@@ -9,7 +9,7 @@ $navigator_json = '
        "type":"folder",
        "permitted" : 0,
        "nodes":[
-        
+
 
          {
             "caption":"Material",
@@ -33,7 +33,7 @@ $navigator_json = '
             "permitted" : 0,
             "path":"/model"
          }
-        
+
 
        ]
     },
@@ -45,7 +45,7 @@ $navigator_json = '
        "type":"folder",
        "permitted" : 0,
        "nodes":[
-        
+
 
         {
             "caption":"Batch Creation",
@@ -54,7 +54,7 @@ $navigator_json = '
             "permitted" : 0,
             "path":"/batchCreation"
          }
-        
+
 
        ]
     },
@@ -66,7 +66,7 @@ $navigator_json = '
        "type":"folder",
        "permitted" : 0,
        "nodes":[
-        
+
 
         {
             "caption":"Inventory",
@@ -89,7 +89,7 @@ $navigator_json = '
             "permitted" : 0,
             "path":"/returnable"
          }
-        
+
 
        ]
     },
@@ -103,7 +103,7 @@ $navigator_json = '
        "type":"folder",
        "permitted" : 0,
        "nodes":[
-        
+
 
         {
             "caption":"MRN Creation",
@@ -119,7 +119,7 @@ $navigator_json = '
             "permitted" : 0,
             "path":"/mrnIssuance"
          }
-        
+
 
        ]
     },
@@ -131,7 +131,7 @@ $navigator_json = '
        "type":"folder",
        "permitted" : 0,
        "nodes":[
-        
+
 
         {
             "caption":"CostSheet View",
@@ -140,11 +140,32 @@ $navigator_json = '
             "permitted" : 0,
             "path":"/costSheetView"
          }
-        
+
 
        ]
     },
-    
+
+            {
+       "caption":"Purchase Orders",
+       "id":"purchase-order-management",
+       "icon":"fas fa-calculator",
+       "type":"folder",
+       "permitted" : 0,
+       "nodes":[
+
+
+        {
+            "caption":"Purchase Orders",
+            "icon":"fas fa-file-invoice-dollar",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/purchaseOrder"
+         }
+
+
+       ]
+    },
+
     {
       "caption": "User Management",
       "id": "user-management",

@@ -72,7 +72,7 @@
 <body>
 @php $colCount = 0; $stickerCount = 0; @endphp
 <table class="outer-table" cellspacing="5" cellpadding="0">
-@foreach($locations as $location)
+@foreach($users as $user)
     @php $colCount++; $stickerCount++; @endphp
     @if($colCount == 1)
     <tr>
@@ -82,12 +82,12 @@
         <table class="sticker" cellspacing="0" cellpadding="0">
             <tr>
                 <td class="top-info">
-                    <div class="rack-text">{{ $location->rack ?? '' }}</div>
-                    <div class="bin-text">{{ $location->bin ?? '' }}</div>
+                    <div class="rack-text">{{ $user->name ?? '' }}</div>
+                    <div class="bin-text">{{ $user->email ?? '' }}</div>
                 </td>
                 <td class="top-qr">
-                    {{-- {!! QrCode::format('svg')->size(65)->generate($location->bin ?? '') !!} --}}
-                   <img src="data:image/png;base64, {!! base64_encode(QrCode::format('svg')->size(45)->generate($location->id ?? '')) !!} ">
+                    {{-- {!! QrCode::format('svg')->size(65)->generate($user->id ?? '') !!} --}}
+                   <img src="data:image/png;base64, {!! base64_encode(QrCode::format('svg')->size(45)->generate($user->id ?? '')) !!} ">
 
                 </td>
             </tr>
@@ -95,10 +95,10 @@
                 <td colspan="2" class="bottom-barcode">
                     @php
                         $generator = new \Picqer\Barcode\BarcodeGeneratorPNG();
-                        $barcodePng = base64_encode($generator->getBarcode($location->id ?? '', $generator::TYPE_CODE_39, 2, 38));
+                        $barcodePng = base64_encode($generator->getBarcode($user->id ?? '', $generator::TYPE_CODE_39, 2, 38));
                     @endphp
                     <img class="barcode-img" src="data:image/png;base64,{{ $barcodePng }}">
-                    <div class="bin-human-text">{{ $location->id ?? '' }}</div>
+                    <div class="bin-human-text">{{ $user->id ?? '' }}</div>
                 </td>
             </tr>
         </table>

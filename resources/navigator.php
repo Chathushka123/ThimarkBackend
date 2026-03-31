@@ -95,6 +95,13 @@ $navigator_json = '
             "type":"node",
             "permitted" : 0,
             "path":"/returnable"
+         },
+         {
+            "caption":"Stock Transfer",
+            "icon":"fas fa-exchange-alt",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/stockTransfer"
          }
 
 

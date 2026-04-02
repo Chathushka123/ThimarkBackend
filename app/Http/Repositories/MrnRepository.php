@@ -49,6 +49,7 @@ class MrnRepository
             'id' => 'nullable|integer|min:1',
             'batch_id' => 'required|integer|exists:batches,id',
             'warehouse_id' => 'required|integer|exists:warehouses,id',
+            'issued_to' => 'required|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -63,6 +64,7 @@ class MrnRepository
             $payload = [
                 'batch_id' => $request->input('batch_id'),
                 'warehouse_id' => $request->input('warehouse_id'),
+                'issued_to' => $request->input('issued_to'),
             ];
 
             if ($id) {
@@ -126,6 +128,7 @@ class MrnRepository
             'mrn_details.*.qty' => 'required|numeric|min:0',
             'mrn_details.*.id' => 'nullable|integer|min:1',
             'mrn_details.*.status' => 'nullable|string',
+            'issued_to' => 'required|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -143,6 +146,7 @@ class MrnRepository
                 'warehouse_id' => $request->input('warehouse_id'),
                 'status' => $request->input('status'),
                 'batch_id' => $request->input('batch_id'),
+                'issued_to' => $request->input('issued_to'),
             ];
 
             // Create or Update MRN
@@ -279,13 +283,15 @@ class MrnRepository
         $model_name = $request->input('model_name');
         $warehouse_name = $request->input('warehouse_name');
         $status = $request->input('status');
+        $issued_to = $request->input('issued_to');
 
         $results = Mrn::select(
             'mrns.id',
             'batches.batch_no',
             'models.name as model_name',
             'mrns.status',
-            'warehouses.name as warehouse_name'
+            'warehouses.name as warehouse_name',
+            'mrns.issued_to'
         )
             ->join('batches', 'mrns.batch_id', '=', 'batches.id')
             ->join('models', 'batches.model_id', '=', 'models.id')
@@ -296,6 +302,7 @@ class MrnRepository
             ->where('models.name',      'LIKE', ($model_name === '%' ? '%' : '%' . $model_name . '%'))
             ->where('warehouses.name',  'LIKE', ($warehouse_name === '%' ? '%' : '%' . $warehouse_name . '%'))
             ->where('mrns.status',      'LIKE', ($status === '%' ? '%' : '%' . $status . '%'))
+            ->where('mrns.issued_to',   'LIKE', ($issued_to === '%' ? '%' : '%' . $issued_to . '%'))
             ->orderBy('mrns.id', 'desc')
             ->get();
 

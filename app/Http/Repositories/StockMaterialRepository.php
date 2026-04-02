@@ -54,6 +54,6 @@ class StockMaterialRepository
                   ->distinct();
         }
 
-        return $query->pluck('stock_materials.id');
+        return $query->get();
     }
 }

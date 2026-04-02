@@ -547,6 +547,7 @@
 
 
             // WHL Items CRUD
+            Route::post('whl-items/move-bin', 'WhlItemController@moveBin')->name('whl-items.moveBin');
             Route::apiResource('whl-items', 'WhlItemController');
 
             // GRN Details CRUD

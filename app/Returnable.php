@@ -13,6 +13,7 @@ class Returnable extends Model
         'issued_qty',
         'return_qty',
         'stock_item_id',
+        'remarks',
         'active',
         'created_by',
         'updated_by',

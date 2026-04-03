@@ -51,4 +51,23 @@ class WhlItemController extends Controller
         $this->repository->delete($id);
         return response()->json(['message' => 'Deleted successfully']);
     }
+
+    public function moveBin(Request $request)
+    {
+        $validated = $request->validate([
+            'from_bin_id'  => 'required|exists:warehouse_locations,id',
+            'to_bin_id'    => 'required|exists:warehouse_locations,id|different:from_bin_id',
+            'material_id'  => 'required|exists:stock_materials,id',
+            'qty'          => 'required|numeric|min:0.0001',
+        ]);
+
+        $result = $this->repository->moveBin(
+            $validated['from_bin_id'],
+            $validated['to_bin_id'],
+            $validated['material_id'],
+            $validated['qty']
+        );
+
+        return response()->json($result);
+    }
 }

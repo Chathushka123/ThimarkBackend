@@ -20,10 +20,17 @@ class PurchaseOrderRepository
 
     public function createPurchaseOrder($data)
     {
-        try {
-            $nextId = (DB::table('purchase_orders')->max('id') ?? 0) + 1;
-            $po_num = sprintf('PO-%s-%06d', date('Y'), $nextId);
+        $nextId = (DB::table('purchase_orders')->max('id') ?? 0) + 1;
+        $po_num = sprintf('PO-%s-%06d', date('Y'), $nextId);
 
+        if (!empty($data['po_number'])) {
+            if (PurchaseOrder::where('po_number', $data['po_number'])->exists()) {
+                throw new \InvalidArgumentException('Entered PO Number already exists!');
+            }
+            $po_num = $data['po_number'];
+        }
+
+        try {
             $po = PurchaseOrder::create([
                 'po_number'              => $po_num,
                 'supplier_id'            => $data['supplier_id'],
@@ -50,12 +57,7 @@ class PurchaseOrderRepository
 
             return $po->load(['supplier', 'items']);
         } catch (\Exception $e) {
-            // Return error details for debugging
-            return response()->json([
-                'error' => true,
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ], 500);
+            throw $e;
         }
     }
 

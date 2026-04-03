@@ -87,7 +87,7 @@ class WarehouseRepository
     public function getActiveLocations($id)
     {
         $warehouse = Warehouse::findOrFail($id);
-        return $warehouse->locations()->where('active', 1)->orderBy('rack')->orderBy('bin')->get();
+        return $warehouse->locations()->where('active', 1)->orderBy('id')->get(); #->orderBy('rack')->orderBy('bin')->get();
     }
 
     public function getWarehouseStructure($id)

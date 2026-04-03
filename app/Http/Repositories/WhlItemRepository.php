@@ -3,6 +3,8 @@
 namespace App\Http\Repositories;
 
 use App\WhlItem;
+use App\WarehouseLocation;
+use Illuminate\Support\Facades\DB;
 
 class WhlItemRepository
 {
@@ -35,5 +37,68 @@ class WhlItemRepository
         $whlItem = WhlItem::findOrFail($id);
         $whlItem->delete(); // Triggers soft-delete logic (active=false)
         return true;
+    }
+
+    public function moveBin(int $fromBinId, int $toBinId, int $materialId, $qty): array
+    {
+        return DB::transaction(function () use ($fromBinId, $toBinId, $materialId, $qty) {
+            if ($fromBinId === $toBinId) {
+                throw new \InvalidArgumentException('Source and destination bins must be different.');
+            }
+
+            $source = WhlItem::lockForUpdate()
+                ->where('whl_id', $fromBinId)
+                ->where('stock_item_id', $materialId)
+                ->firstOrFail();
+
+            if ($qty <= 0) {
+                throw new \InvalidArgumentException('Transfer quantity must be greater than zero.');
+            }
+
+            if ($qty > $source->qty) {
+                throw new \InvalidArgumentException(
+                    "Transfer quantity ({$qty}) exceeds available stock ({$source->qty})."
+                );
+            }
+
+            $fromBin = WarehouseLocation::findOrFail($fromBinId);
+            $toBin   = WarehouseLocation::findOrFail($toBinId);
+
+            if ($fromBin->warehouse_id !== $toBin->warehouse_id) {
+                throw new \InvalidArgumentException('Source and destination bins must belong to the same warehouse.');
+            }
+
+            $remainingQty = $source->qty - $qty;
+            if ($remainingQty == 0) {
+                $source->delete();
+            } else {
+                $source->qty = $remainingQty;
+                $source->save();
+            }
+
+            $destination = WhlItem::where('whl_id', $toBinId)
+                ->where('stock_item_id', $materialId)
+                ->first();
+
+            if ($destination) {
+                $destination->qty += $qty;
+                $destination->save();
+            } else {
+                $destination = WhlItem::create([
+                    'whl_id'        => $toBinId,
+                    'stock_item_id' => $materialId,
+                    'qty'           => $qty,
+                ]);
+            }
+
+            return [
+                'from_bin_id'     => $fromBinId,
+                'to_bin_id'       => $toBinId,
+                'material_id'     => $materialId,
+                'transferred_qty' => $qty,
+                'source_remaining_qty' => $remainingQty,
+                'destination_qty' => $destination->qty,
+            ];
+        });
     }
 }

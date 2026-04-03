@@ -39,6 +39,7 @@ class PurchaseOrderController extends Controller
     {
         try {
             $validated = $request->validate([
+                'po_number'                => 'nullable|string',
                 'supplier_id'              => 'required|exists:suppliers,id',
                 'order_date'               => 'required|date_format:Y-m-d',
                 'expected_delivery_date'   => 'nullable|date_format:Y-m-d',
@@ -58,8 +59,10 @@ class PurchaseOrderController extends Controller
             ]);
             $po = $this->repo->createPurchaseOrder($validated);
             return response()->json($po, 201);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => true, 'message' => $e->getMessage()], 400);
         } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
+            return response()->json(['error' => true, 'message' => $e->getMessage()], 500);
         }
     }
 

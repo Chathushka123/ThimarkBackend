@@ -71,7 +71,7 @@ class StockMaterialController extends Controller
         $wh = $request->query('wh', '');
         return StockMaterial::where('name', 'like', "%{$q}%")
             ->orWhere('code', 'like', "%{$q}%")
-            ->pluck('id');
+            ->get();
     }
 
         public function printStickers()
@@ -85,7 +85,7 @@ class StockMaterialController extends Controller
     public function printStickersByIds($ids)
     {
         $idArray = explode(',', $ids);
-        $materials = StockMaterial::whereIn('id', $idArray)->where('active', '=', 1)->get();
+        $materials = StockMaterial::whereIn('id', $idArray)->where('active', '=', 1)->orderBy('code')->get();
         $pdf = PDF::loadView('print.material_stickers', ['materials' => $materials]);
         $pdf->setPaper('A4', 'portrait');
         return $pdf->stream('material_stickers_' . date('Y_m_d_H_i_s') . '.pdf');

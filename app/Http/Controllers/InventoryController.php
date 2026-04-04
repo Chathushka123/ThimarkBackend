@@ -395,6 +395,7 @@ class InventoryController extends Controller
                 'issued_qty' => 'required|numeric|min:0',
                 'return_qty' => 'required|numeric|min:0',
                 'stock_item_id' => 'required|integer|exists:stock_materials,id',
+                'remarks' => 'nullable|string|max:1000',
             ]);
 
             $returnable = \App\Returnable::create($validated);

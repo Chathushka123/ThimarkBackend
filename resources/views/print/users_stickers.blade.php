@@ -31,7 +31,7 @@
     .top-info {
         vertical-align: middle;
         padding: 5px 8px;
-        width: 58%;
+        width: 75%;
         border-right: 1px solid #555;
         height: 55px;
     }
@@ -39,7 +39,7 @@
     .top-qr {
         vertical-align: middle;
         text-align: center;
-        width: 42%;
+        width: 25%;
         height: 55px;
         padding: 3px;
     }
@@ -52,9 +52,10 @@
     }
 
     .rack-text {
-        font-size: 8px;
-        color: #555;
+        font-size: 12px;
+        color: #000000;
         margin-bottom: 3px;
+        font-weight: bold;
     }
 
     .bin-text {
@@ -63,7 +64,8 @@
     }
 
     .bin-human-text {
-        font-size: 9px;
+        font-size: 12px;
+        font-weight: bold;
         margin-top: 3px;
         text-align: center;
     }

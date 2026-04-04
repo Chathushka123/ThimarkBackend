@@ -19,6 +19,7 @@
 
     .sticker-td {
         width: 50%;
+        max-width: 50%;
         vertical-align: top;
     }
 
@@ -31,7 +32,8 @@
     .top-info {
         vertical-align: middle;
         padding: 5px 8px;
-        width: 58%;
+        width: 75%;
+        max-width: 75%;
         border-right: 1px solid #555;
         height: 55px;
     }
@@ -39,7 +41,7 @@
     .top-qr {
         vertical-align: middle;
         text-align: center;
-        width: 42%;
+        width: 25%;
         height: 55px;
         padding: 3px;
     }
@@ -52,9 +54,10 @@
     }
 
     .rack-text {
-        font-size: 8px;
-        color: #555;
+        font-size: 12px;
+        color: #000427;
         margin-bottom: 3px;
+        font-weight: bold;
     }
 
     .bin-text {
@@ -63,16 +66,30 @@
     }
 
     .bin-human-text {
-        font-size: 9px;
+        font-size: 12px;
+        font-weight: bold;
         margin-top: 3px;
         text-align: center;
     }
 </style>
 </head>
 <body>
-@php $colCount = 0; $stickerCount = 0; @endphp
+@php $colCount = 0; $stickerCount = 0; $prevRack = null; @endphp
 <table class="outer-table" cellspacing="5" cellpadding="0">
 @foreach($locations as $location)
+    @php
+        $rackChanged = $prevRack !== null && ($location->rack ?? '') !== $prevRack;
+        $prevRack = $location->rack ?? '';
+    @endphp
+    @if($rackChanged)
+        @if($colCount == 1)
+        <td class="sticker-td"></td></tr>
+        @endif
+        </table>
+        <div style="page-break-before: always;"></div>
+        <table class="outer-table" cellspacing="5" cellpadding="0">
+        @php $colCount = 0; $stickerCount = 0; @endphp
+    @endif
     @php $colCount++; $stickerCount++; @endphp
     @if($colCount == 1)
     <tr>
@@ -83,7 +100,7 @@
             <tr>
                 <td class="top-info">
                     <div class="rack-text">{{ $location->rack ?? '' }}</div>
-                    <div class="bin-text">{{ $location->bin ?? '' }}</div>
+                    <div class="bin-text">{{ $location->bin ?? '' }}@if($location->stockMaterial) | {{ $location->stockMaterial->code }} | {{ \Illuminate\Support\Str::limit($location->stockMaterial->name, 15, '...') }}@endif</div>
                 </td>
                 <td class="top-qr">
                     {{-- {!! QrCode::format('svg')->size(65)->generate($location->bin ?? '') !!} --}}
@@ -116,7 +133,7 @@
         </table>
         <pagebreak style="page-break-before: always;" pagebreak="true"></pagebreak>
         <table class="outer-table" cellspacing="5" cellpadding="0">
-        @php $colCount = 0; $stickerCount = 0; @endphp
+        @php $colCount = 0; $stickerCount = 0; $prevRack = null; @endphp
     @endif
 @endforeach
 @if($colCount == 1)

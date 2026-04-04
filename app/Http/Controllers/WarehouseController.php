@@ -67,6 +67,8 @@ class WarehouseController extends Controller
     public function printStickers($id)
     {
         $locations = $this->repository->getActiveLocations($id);
+                // return response()->json($locations);
+
         $pdf = PDF::loadView('print.warehouse_location_stickers', ['locations' => $locations]);
         $pdf->setPaper('A4', 'portrait');
         return $pdf->stream('warehouse_stickers_' . $id . '_' . date('Y_m_d_H_i_s') . '.pdf');

@@ -87,7 +87,9 @@ class WarehouseRepository
     public function getActiveLocations($id)
     {
         $warehouse = Warehouse::findOrFail($id);
-        return $warehouse->locations()->where('active', 1)->orderBy('id')->get(); #->orderBy('rack')->orderBy('bin')->get();
+        return $warehouse->locations()->where('active', 1)
+            ->with(['stockMaterial:id,name,code'])
+            ->orderBy('rack')->orderBy('id')->get();
     }
 
     public function getWarehouseStructure($id)
@@ -95,6 +97,12 @@ class WarehouseRepository
         $warehouse = Warehouse::findOrFail($id);
 
         // Global scopes on WarehouseLocation and WhlItem already filter active=true
+        // $locations = $warehouse->locations()->where('active', 1)->with([
+        //     'whlItems' => fn($q) => $q->select('whl_id', 'stock_item_id', DB::raw('SUM(qty) as qty'))
+        //         ->groupBy('whl_id', 'stock_item_id'),
+        //     'whlItems.stockItem',
+        // ])->get();
+
         $locations = $warehouse->locations()->where('active', 1)->with(['whlItems' => fn($q) => $q->where('qty', '>', 0), 'whlItems.stockItem'])->get();
 
         // Group locations by rack, then collect bins per rack

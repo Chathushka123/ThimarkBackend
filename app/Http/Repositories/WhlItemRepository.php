@@ -21,6 +21,19 @@ class WhlItemRepository
     public function create(array $data)
     {
         unset($data['grn_price']);
+
+        $bin = WarehouseLocation::with('warehouse')->findOrFail($data['whl_id']);
+        if ($bin->warehouse->location_basis == 1) {
+            $conflict = WhlItem::where('whl_id', $data['whl_id'])
+                ->where('stock_item_id', '!=', $data['stock_item_id'])
+                ->exists();
+            if ($conflict) {
+                throw new \InvalidArgumentException(
+                    'This bin already contains a different stock material. A location-basis-1 warehouse allows only one material per bin.'
+                );
+            }
+        }
+
         return WhlItem::create($data);
     }
 
@@ -61,11 +74,22 @@ class WhlItemRepository
                 );
             }
 
-            $fromBin = WarehouseLocation::findOrFail($fromBinId);
+            $fromBin = WarehouseLocation::with('warehouse')->findOrFail($fromBinId);
             $toBin   = WarehouseLocation::findOrFail($toBinId);
 
             if ($fromBin->warehouse_id !== $toBin->warehouse_id) {
                 throw new \InvalidArgumentException('Source and destination bins must belong to the same warehouse.');
+            }
+
+            if ($fromBin->warehouse->location_basis == 1) {
+                $conflict = WhlItem::where('whl_id', $toBinId)
+                    ->where('stock_item_id', '!=', $materialId)
+                    ->exists();
+                if ($conflict) {
+                    throw new \InvalidArgumentException(
+                        'Destination bin already contains a different stock material. A location-basis-1 warehouse allows only one material per bin.'
+                    );
+                }
             }
 
             $remainingQty = $source->qty - $qty;

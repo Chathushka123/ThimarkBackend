@@ -205,7 +205,7 @@ class WarehouseRepository
                     'whl_id'           => $source->whl_id,
                     'stock_item_id'    => $source->stock_item_id,
                     'remaining_qty'    => $remainingQty,
-                    'fully_transferred'=> $remainingQty == 0,
+                    'fully_transferred' => $remainingQty == 0,
                 ],
                 'destination' => [
                     'whl_item_id'   => $destination->id,

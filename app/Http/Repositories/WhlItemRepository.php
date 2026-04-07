@@ -4,6 +4,7 @@ namespace App\Http\Repositories;
 
 use App\WhlItem;
 use App\WarehouseLocation;
+use App\StockMaterial;
 use Illuminate\Support\Facades\DB;
 
 class WhlItemRepository
@@ -23,13 +24,12 @@ class WhlItemRepository
         unset($data['grn_price']);
 
         $bin = WarehouseLocation::with('warehouse')->findOrFail($data['whl_id']);
-        if ($bin->warehouse->location_basis == 1) {
-            $conflict = WhlItem::where('whl_id', $data['whl_id'])
-                ->where('stock_item_id', '!=', $data['stock_item_id'])
-                ->exists();
-            if ($conflict) {
+        $stock_material = StockMaterial::findOrFail($bin->stock_item_id);
+        if ($bin->warehouse->location_basis == 1 && $bin->stock_item_id != null) {
+
+            if ($bin->stock_item_id != $data['stock_item_id']) {
                 throw new \InvalidArgumentException(
-                    'This bin already contains a different stock material. A location-basis-1 warehouse allows only one material per bin.'
+                    "This bin already Map a different stock material ({$stock_material->code}). "
                 );
             }
         }

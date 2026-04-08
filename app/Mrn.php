@@ -15,6 +15,8 @@ class Mrn extends Model
         'active',
         'created_by',
         'updated_by',
+        'finalized_at',
+        'complete_at',
     ];
 
     // Allowed status values: open, finalized, proccesing, complete

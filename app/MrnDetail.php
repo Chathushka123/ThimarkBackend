@@ -19,6 +19,7 @@ class MrnDetail extends Model
         'active',
         'created_by',
         'updated_by',
+        'issued_to',
     ];
 
     protected static function boot()

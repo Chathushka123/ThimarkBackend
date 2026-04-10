@@ -64,6 +64,14 @@ return [
             'url' => env('AWS_URL'),
         ],
 
+        'google' => [
+            'driver'               => 'google',
+            'service_account_file' => storage_path('app/credentials/google-service-account.json'),
+            // The ID of the folder in YOUR Google Drive that you shared with the service account.
+            // Get it from: https://drive.google.com/drive/folders/<FOLDER_ID>
+            'shared_folder_id'     => env('GOOGLE_DRIVE_FOLDER_ID', null),
+        ],
+
     ],
 
 ];

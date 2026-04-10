@@ -20,6 +20,21 @@ class WarehouseController extends Controller
         return response()->json($this->repository->all());
     }
 
+    public function snapshot(Request $request, $id)
+    {
+        $request->validate([
+            'date' => 'required|date_format:Y-m-d',
+        ]);
+
+        $snapshot = $this->repository->getSnapshot((int) $id, $request->date);
+
+        if ($snapshot === null) {
+            return response()->json(['message' => 'Snapshot not found for the given warehouse and date.'], 404);
+        }
+
+        return response()->json($snapshot);
+    }
+
     public function show($id)
     {
         return response()->json($this->repository->find($id));

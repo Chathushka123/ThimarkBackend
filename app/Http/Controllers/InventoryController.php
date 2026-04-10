@@ -362,6 +362,7 @@ class InventoryController extends Controller
             $mrn = Mrn::where('active', true)->findOrFail($validated['mrn_id']);
 
             $mrn->status = 'complete';
+            $mrn->complete_at = now();
             $mrn->save();
 
             DB::commit();

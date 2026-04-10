@@ -169,6 +169,7 @@ class MrnRepository
                     'mrn_id' => $mrn->id,
                     'stock_item_id' => $detail['stock_item_id'],
                     'qty' => $detail['qty'],
+                    'issued_to' => $detail['issued_to'] ?? null,
                 ];
 
                 if ($detailId) {
@@ -230,6 +231,7 @@ class MrnRepository
         try {
             $mrn = Mrn::where('active', true)->findOrFail($request->input('mrn_id'));
             $mrn->status = 'finalized';
+            $mrn->finalized_at = now();
             $mrn->save();
 
             return response()->json([

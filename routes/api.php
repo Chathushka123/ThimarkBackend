@@ -583,6 +583,7 @@ Route::prefix('v1')->group(function () {
         Route::put('suppliers/{id}', 'Api\SupplierController@update');
 
         // Purchase Order APIs
+        Route::get('purchase-orders/approved-sent', 'Api\PurchaseOrderController@approvedAndSent');
         Route::get('purchase-orders', 'Api\PurchaseOrderController@index');
         Route::get('purchase-orders/{id}', 'Api\PurchaseOrderController@show');
         Route::post('purchase-orders', 'Api\PurchaseOrderController@store');

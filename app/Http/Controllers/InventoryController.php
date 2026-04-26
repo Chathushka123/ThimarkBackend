@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\MrnDetailsExport;
 use App\Http\Repositories\WarehouseRepository;
 use App\GrnDetail;
 use App\Mrn;
@@ -9,6 +10,7 @@ use App\MrnDetail;
 use App\WhlItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class InventoryController extends Controller
 {
@@ -90,6 +92,63 @@ class InventoryController extends Controller
                 'qty' => $totalQty ?? 0
             ]
         ], 200);
+    }
+
+    /**
+     * POST /api/v1/inventory/available-qty
+     * Returns total available qty in whl_items for the given stock_item_id.
+     *
+     * Body:
+     *   stock_item_id (int)
+     */
+    public function getAvailableQtyByStockItem(Request $request)
+    {
+        $validated = $request->validate([
+            'stock_item_id' => 'required|integer',
+        ]);
+
+        $totalQty = WhlItem::where('stock_item_id', $validated['stock_item_id'])
+            ->where('active', true)
+            ->sum('qty');
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'stock_item_id' => (int) $validated['stock_item_id'],
+                'qty' => $totalQty ?? 0,
+            ],
+        ], 200);
+    }
+
+    public function downloadMrnDetailsExcel(Request $request)
+    {
+        $rows = DB::table('mrn_details as md')
+            ->join('mrns as m', 'm.id', '=', 'md.mrn_id')
+            ->join('stock_materials as sm', 'sm.id', '=', 'md.stock_item_id')
+            ->leftJoin('users as createdUser', 'createdUser.id', '=', 'md.created_by')
+            ->leftJoin('users as updatedUser', 'updatedUser.id', '=', 'md.updated_by')
+            ->select([
+                'sm.code as code',
+                'sm.name as name',
+                'm.status as MRNStatus',
+                'md.qty as Req_Qty',
+                'md.issued_qty as IssuedQty',
+                'md.issued_to as IssuedTo',
+                'createdUser.email as CreatedBy',
+                'updatedUser.email as UpdatedBy',
+                'md.created_at as CreatedAt',
+                'md.updated_at as UpdatedAt',
+            ])
+            ->get();
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        return Excel::download(
+            new MrnDetailsExport($rows),
+            'mrn-details-' . now()->format('Y-m-d-H-i-s') . '.xlsx'
+        );
     }
 
     /**

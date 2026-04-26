@@ -539,7 +539,7 @@ Route::prefix('v1')->group(function () {
 
         // Warehouses and Locations CRUD
         Route::get('warehouses/{id}/stickers', 'WarehouseController@printStickers')->name('warehouses.stickers');
-            Route::get('warehouses/{id}/snapshot', 'WarehouseController@snapshot')->name('warehouses.snapshot');
+        Route::get('warehouses/{id}/snapshot', 'WarehouseController@snapshot')->name('warehouses.snapshot');
         Route::apiResource('warehouses', 'WarehouseController');
 
         // Warehouse Locations CRUD

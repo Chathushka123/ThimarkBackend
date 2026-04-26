@@ -143,6 +143,26 @@ class WarehouseRepository
     }
 
     /**
+     * Retrieve a previously saved inventory snapshot for a warehouse on a given date.
+     * Looks in local storage first; falls back to Google Drive.
+     */
+    public function getSnapshot(int $warehouseId, string $date): ?array
+    {
+        $filename = "warehouse_{$warehouseId}_{$date}.json";
+        $localPath = "inventory-snapshots/{$filename}";
+
+        if (\Illuminate\Support\Facades\Storage::disk('local')->exists($localPath)) {
+            $json = \Illuminate\Support\Facades\Storage::disk('local')->get($localPath);
+        } elseif (\Illuminate\Support\Facades\Storage::disk('google')->exists($filename)) {
+            $json = \Illuminate\Support\Facades\Storage::disk('google')->get($filename);
+        } else {
+            return null;
+        }
+
+        return json_decode($json, true);
+    }
+
+    /**
      * Transfer stock from one bin (warehouse_location) to another.
      *
      * @param  int   $whlItemId   Source whl_item id

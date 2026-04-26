@@ -4,6 +4,7 @@ namespace App\Http\Repositories;
 
 use App\WhlItem;
 use App\WarehouseLocation;
+use App\InventoryLog;
 use App\StockMaterial;
 use Illuminate\Support\Facades\DB;
 
@@ -34,14 +35,40 @@ class WhlItemRepository
             }
         }
 
-        return WhlItem::create($data);
+        $whlItem = WhlItem::create($data);
+
+        InventoryLog::create([
+            'wh_id'             => $bin->warehouse_id,
+            'bin_id'            => $whlItem->whl_id,
+            'stock_material_id' => $whlItem->stock_item_id,
+            'whl_item_id'       => $whlItem->id,
+            'log_type'          => 'Add a material',
+            'previous_qty'      => null,
+            'new_qty'           => $whlItem->qty,
+        ]);
+
+        return $whlItem;
     }
 
     public function update($id, array $data)
     {
-        $whlItem = WhlItem::findOrFail($id);
+        $whlItem = WhlItem::with('warehouseLocation')->findOrFail($id);
+        $previousQty = $whlItem->qty;
         unset($data['grn_price']);
         $whlItem->update($data);
+
+        if (isset($data['qty']) && $data['qty'] != $previousQty) {
+            InventoryLog::create([
+                'wh_id'             => $whlItem->warehouseLocation->warehouse_id,
+                'bin_id'            => $whlItem->whl_id,
+                'stock_material_id' => $whlItem->stock_item_id,
+                'whl_item_id'       => $whlItem->id,
+                'log_type'          => 'Quantity adjustment',
+                'previous_qty'      => $previousQty,
+                'new_qty'           => $whlItem->qty,
+            ]);
+        }
+
         return $whlItem;
     }
 
@@ -92,6 +119,7 @@ class WhlItemRepository
                 }
             }
 
+            $previousQty  = $source->qty;
             $remainingQty = $source->qty - $qty;
             if ($remainingQty == 0) {
                 $source->delete();
@@ -114,6 +142,18 @@ class WhlItemRepository
                     'qty'           => $qty,
                 ]);
             }
+
+            InventoryLog::create([
+                'wh_id'             => $fromBin->warehouse_id,
+                'bin_id'            => $fromBinId,
+                'stock_material_id' => $materialId,
+                'whl_item_id'       => $source->id,
+                'log_type'          => 'Transfer to a new bin',
+                'previous_qty'      => $previousQty,
+                'new_qty'           => $remainingQty,
+                'old_bin'           => $fromBinId,
+                'new_bin'           => $toBinId,
+            ]);
 
             return [
                 'from_bin_id'     => $fromBinId,

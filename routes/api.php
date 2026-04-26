@@ -523,6 +523,7 @@ Route::prefix('v1')->group(function () {
 
         // Inventory
         Route::get('inventory/warehouse/{id}', 'InventoryController@getWarehouseStructure')->name('inventory.warehouse.structure');
+
         Route::post('inventory/transfer', 'InventoryController@transferStock')->name('inventory.transfer');
         Route::get('inventory/balance', 'InventoryController@getBalance')->name('inventory.balance');
         Route::post('inventory/available-qty', 'InventoryController@getAvailableQtyByStockItem')->name('inventory.availableQty');
@@ -538,6 +539,7 @@ Route::prefix('v1')->group(function () {
 
         // Warehouses and Locations CRUD
         Route::get('warehouses/{id}/stickers', 'WarehouseController@printStickers')->name('warehouses.stickers');
+        Route::get('warehouses/{id}/snapshot', 'WarehouseController@snapshot')->name('warehouses.snapshot');
         Route::apiResource('warehouses', 'WarehouseController');
 
         // Warehouse Locations CRUD
@@ -581,6 +583,7 @@ Route::prefix('v1')->group(function () {
         Route::put('suppliers/{id}', 'Api\SupplierController@update');
 
         // Purchase Order APIs
+        Route::get('purchase-orders/approved-sent', 'Api\PurchaseOrderController@approvedAndSent');
         Route::get('purchase-orders', 'Api\PurchaseOrderController@index');
         Route::get('purchase-orders/{id}', 'Api\PurchaseOrderController@show');
         Route::post('purchase-orders', 'Api\PurchaseOrderController@store');

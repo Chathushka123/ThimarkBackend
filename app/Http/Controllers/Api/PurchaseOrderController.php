@@ -28,6 +28,12 @@ class PurchaseOrderController extends Controller
         return $this->repo->getPurchaseOrders();
     }
 
+    // Get APPROVED and SENT purchase orders
+    public function approvedAndSent()
+    {
+        return response()->json($this->repo->getApprovedAndSentOrders());
+    }
+
     // Get purchase order by id
     public function show($id)
     {

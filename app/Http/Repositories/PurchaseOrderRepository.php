@@ -13,6 +13,14 @@ class PurchaseOrderRepository
         return PurchaseOrder::with(['supplier', 'items'])->get();
     }
 
+    public function getApprovedAndSentOrders()
+    {
+        return PurchaseOrder::with(['supplier', 'items'])
+            ->whereIn('status', ['APPROVED', 'SENT'])
+            ->orderByDesc('order_date')
+            ->get();
+    }
+
     public function getPurchaseOrder($id)
     {
         return PurchaseOrder::with(['supplier', 'items'])->find($id);
@@ -51,6 +59,8 @@ class PurchaseOrderRepository
                     'material_id'            => $item['material_id'],
                     'quantity'               => $item['quantity'],
                     'unit_price'             => $item['unit_price'],
+                    'total'                  => $item['total'],
+
                     'expected_delivery_date' => $item['expected_delivery_date'] ?? null,
                 ]);
             }
@@ -91,6 +101,7 @@ class PurchaseOrderRepository
                     'quantity'               => $item['quantity'],
                     'unit_price'             => $item['unit_price'],
                     'expected_delivery_date' => $item['expected_delivery_date'] ?? null,
+                    'total'                  => $item['total'],
                 ]);
             } elseif ($rowstate === 'MODIFIED' && !empty($item['id'])) {
                 $po->items()->where('id', $item['id'])->update([
@@ -98,6 +109,7 @@ class PurchaseOrderRepository
                     'quantity'               => $item['quantity'],
                     'unit_price'             => $item['unit_price'],
                     'expected_delivery_date' => $item['expected_delivery_date'] ?? null,
+                    'total'                  => $item['total'],
                 ]);
             } elseif ($rowstate === 'DELETED' && !empty($item['id'])) {
                 $po->items()->where('id', $item['id'])->delete();

@@ -19,6 +19,9 @@ class MrnDetailsExport implements FromCollection, WithHeadings, ShouldAutoSize
     public function collection()
     {
         return $this->rows->map(function ($row) {
+            $createdAt = $this->splitDateTime($row->CreatedAt);
+            $issuedAt = $this->splitDateTime($row->UpdatedAt);
+
             return [
                 'code' => $row->code,
                 'name' => $row->name,
@@ -28,10 +31,29 @@ class MrnDetailsExport implements FromCollection, WithHeadings, ShouldAutoSize
                 'IssuedTo' => $row->IssuedTo,
                 'CreatedBy' => $row->CreatedBy,
                 'UpdatedBy' => $row->UpdatedBy,
-                'CreatedAt' => $row->CreatedAt,
-                'IssuedAt' => $row->UpdatedAt,
+                'CreatedDate' => $createdAt['date'],
+                'CreatedTime' => $createdAt['time'],
+                'IssuedDate' => $issuedAt['date'],
+                'IssuedTime' => $issuedAt['time'],
             ];
         });
+    }
+
+    protected function splitDateTime($value): array
+    {
+        if (empty($value)) {
+            return [
+                'date' => '',
+                'time' => '',
+            ];
+        }
+
+        $parts = explode(' ', (string) $value, 2);
+
+        return [
+            'date' => $parts[0] ?? '',
+            'time' => $parts[1] ?? '',
+        ];
     }
 
     public function headings(): array
@@ -45,8 +67,10 @@ class MrnDetailsExport implements FromCollection, WithHeadings, ShouldAutoSize
             'IssuedTo',
             'CreatedBy',
             'UpdatedBy',
-            'CreatedAt',
-            'IssuedAt',
+            'CreatedDate',
+            'CreatedTime',
+            'IssuedDate',
+            'IssuedTime',
         ];
     }
 }

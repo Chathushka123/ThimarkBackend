@@ -588,6 +588,34 @@ Route::prefix('v1')->group(function () {
         Route::get('purchase-orders/{id}', 'Api\PurchaseOrderController@show');
         Route::post('purchase-orders', 'Api\PurchaseOrderController@store');
         Route::put('purchase-orders/{id}', 'Api\PurchaseOrderController@update');
+
+        // Daily Production Summary Report APIs
+        Route::get('reports/daily-production-summary', 'Api\DailyProductionReportController@index');
+        Route::get('reports/daily-production-summary/download', 'Api\DailyProductionReportController@download');
+
+        // Current Stock On Hand Report APIs
+        Route::get('reports/current-stock-on-hand', 'Api\CurrentStockReportController@index');
+        Route::get('reports/current-stock-on-hand/download', 'Api\CurrentStockReportController@download');
+
+        // GRN Pending vs Completed Report APIs
+        Route::get('reports/grn-pending-vs-completed', 'Api\GrnPendingCompletedReportController@index');
+        Route::get('reports/grn-pending-vs-completed/download', 'Api\GrnPendingCompletedReportController@download');
+
+        // MRN Activity Per User Report APIs
+        Route::get('reports/mrn-activity-per-user', 'Api\\MrnActivityPerUserReportController@index');
+        Route::get('reports/mrn-activity-per-user/download', 'Api\\MrnActivityPerUserReportController@download');
+
+        // MRN Turnaround Time Report APIs
+        Route::get('reports/mrn-turnaround-time', 'Api\\MrnTurnaroundTimeReportController@index');
+        Route::get('reports/mrn-turnaround-time/download', 'Api\\MrnTurnaroundTimeReportController@download');
+
+        // Material Consumption Per Model Report APIs
+        Route::get('reports/material-consumption-per-model', 'Api\\MaterialConsumptionPerModelReportController@index');
+        Route::get('reports/material-consumption-per-model/download', 'Api\\MaterialConsumptionPerModelReportController@download');
+
+        // Purchase Order Status Report APIs
+        Route::get('reports/purchase-order-status', 'Api\\PurchaseOrderStatusReportController@index');
+        Route::get('reports/purchase-order-status/download', 'Api\\PurchaseOrderStatusReportController@download');
     });
 });
 

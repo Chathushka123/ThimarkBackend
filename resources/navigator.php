@@ -187,54 +187,13 @@ $navigator_json = '
        "type":"folder",
        "permitted" : 0,
        "nodes":[
-         {
-            "caption":"Daily Output",
-            "icon":"fas fa-circle",
-            "type":"node",
-            "permitted" : 0,
-            "path":"/dailyOutput"
-         },
+
          {
             "caption":"Current Stock",
             "icon":"fas fa-circle",
             "type":"node",
             "permitted" : 0,
             "path":"/currentStock"
-         },
-         {
-            "caption":"GRNs",
-            "icon":"fas fa-circle",
-            "type":"node",
-            "permitted" : 0,
-            "path":"/grnPendingCompleted"
-         },
-         {
-            "caption":"User - MRN",
-            "icon":"fas fa-circle",
-            "type":"node",
-            "permitted" : 0,
-            "path":"/mrnActivityPerUser"
-         },
-         {
-            "caption":"MRNs",
-            "icon":"fas fa-circle",
-            "type":"node",
-            "permitted" : 0,
-            "path":"/mrnTurnaroundTime"
-         },
-         {
-            "caption":"Material Consumption",
-            "icon":"fas fa-circle",
-            "type":"node",
-            "permitted" : 0,
-            "path":"/materialConsumptionPerModel"
-         },
-         {
-            "caption":"Purchase Orders",
-            "icon":"fas fa-circle",
-            "type":"node",
-            "permitted" : 0,
-            "path":"/purchaseOrderStatus"
          }
       ]
    },

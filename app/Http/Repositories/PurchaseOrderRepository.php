@@ -16,7 +16,7 @@ class PurchaseOrderRepository
     public function getApprovedAndSentOrders()
     {
         return PurchaseOrder::with(['supplier', 'items'])
-            ->whereIn('status', ['APPROVED', 'SENT'])
+            // ->whereIn('status', ['APPROVED', 'SENT'])
             ->orderByDesc('order_date')
             ->get();
     }

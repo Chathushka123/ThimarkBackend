@@ -194,6 +194,13 @@ $navigator_json = '
             "type":"node",
             "permitted" : 0,
             "path":"/currentStock"
+         },
+         {
+            "caption":"Grn Report",
+            "icon":"fas fa-circle",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/grnReport"
          }
       ]
    },

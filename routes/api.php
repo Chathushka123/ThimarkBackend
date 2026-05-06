@@ -603,6 +603,10 @@ Route::prefix('v1')->group(function () {
         Route::get('reports/grn-pending-vs-completed', 'Api\GrnPendingCompletedReportController@index');
         Route::get('reports/grn-pending-vs-completed/download', 'Api\GrnPendingCompletedReportController@download');
 
+        // GRN Report APIs
+        Route::get('reports/grn-report', 'Api\\GrnReportController@index');
+        Route::get('reports/grn-report/download', 'Api\\GrnReportController@download');
+
         // MRN Activity Per User Report APIs
         Route::get('reports/mrn-activity-per-user', 'Api\\MrnActivityPerUserReportController@index');
         Route::get('reports/mrn-activity-per-user/download', 'Api\\MrnActivityPerUserReportController@download');

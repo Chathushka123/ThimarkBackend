@@ -11,6 +11,8 @@ class GrnDetail extends Model
 
     protected $fillable = [
         'grn_id',
+        'warehouse_location_id',
+        'stock_item_id',
         'whl_item_id',
         'qty',
         'available_qty',
@@ -48,6 +50,16 @@ class GrnDetail extends Model
     public function grn()
     {
         return $this->belongsTo(Grn::class, 'grn_id');
+    }
+
+    public function warehouseLocation()
+    {
+        return $this->belongsTo(WarehouseLocation::class, 'warehouse_location_id');
+    }
+
+    public function stockMaterial()
+    {
+        return $this->belongsTo(StockMaterial::class, 'stock_item_id');
     }
 
     public function whlItem()

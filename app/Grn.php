@@ -52,6 +52,11 @@ class Grn extends Model
         return $this->hasMany(GrnDetail::class, 'grn_id');
     }
 
+    public function purchaseOrder()
+    {
+        return $this->belongsTo(PurchaseOrder::class, 'rmpono', 'po_number');
+    }
+
     protected function serializeDate(DateTimeInterface $date)
     {
         return $date->format('Y-m-d H:i:s');

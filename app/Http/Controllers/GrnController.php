@@ -55,24 +55,33 @@ class GrnController extends Controller
         $transactions = GrnDetail::with([
             'whlItem.stockItem',
             'whlItem.warehouseLocation',
+            'warehouseLocation',
+            'stockMaterial',
         ])
             ->where('grn_id', $id)
             ->orderBy('id', 'desc')
             ->get()
             ->map(function ($detail) {
+                $useNewColumns = is_null($detail->whl_item_id);
+
+                $stockItemId   = $useNewColumns ? $detail->stock_item_id   : optional($detail->whlItem)->stock_item_id;
+                $stockMaterial = $useNewColumns ? $detail->stockMaterial    : optional($detail->whlItem)->stockItem;
+                $locationId    = $useNewColumns ? $detail->warehouse_location_id : optional($detail->whlItem)->whl_id;
+                $location      = $useNewColumns ? $detail->warehouseLocation : optional($detail->whlItem)->warehouseLocation;
+
                 return [
-                    'id'             => $detail->id,
-                    'grn_id'         => $detail->grn_id,
-                    'whl_item_id'    => $detail->whl_item_id,
-                    'qty'            => $detail->qty,
-                    'available_qty'  => $detail->available_qty,
-                    'grn_price'      => $detail->grn_price,
-                    'stock_item_id'  => optional($detail->whlItem)->stock_item_id,
-                    'stock_item_name' => optional(optional($detail->whlItem)->stockItem)->code . "(" . optional(optional($detail->whlItem)->stockItem)->name . ")",
-                    'location_id'    => optional($detail->whlItem)->whl_id,
-                    'rack'           => optional(optional($detail->whlItem)->warehouseLocation)->rack,
-                    'location'       => optional(optional($detail->whlItem)->warehouseLocation)->bin,
-                    'created_at'     => $detail->created_at,
+                    'id'              => $detail->id,
+                    'grn_id'          => $detail->grn_id,
+                    'whl_item_id'     => $detail->whl_item_id,
+                    'qty'             => $detail->qty,
+                    'available_qty'   => $detail->available_qty,
+                    'grn_price'       => $detail->grn_price,
+                    'stock_item_id'   => $stockItemId,
+                    'stock_item_name' => optional($stockMaterial)->code . '(' . optional($stockMaterial)->name . ')',
+                    'location_id'     => $locationId,
+                    'rack'            => optional($location)->rack,
+                    'location'        => optional($location)->bin,
+                    'created_at'      => $detail->created_at,
                 ];
             });
 
@@ -163,6 +172,34 @@ class GrnController extends Controller
         }
     }
 
+    public function getOpenGrnsWithRelations()
+    {
+        $data = Grn::with([
+            'warehouse',
+            'details' => function ($query) {
+                $query->whereNull('whl_item_id');
+            },
+            'details.whlItem.warehouseLocation',
+            'details.whlItem.stockItem',
+            'details.warehouseLocation',
+            'details.stockMaterial',
+            'purchaseOrder.supplier',
+            'purchaseOrder.items.material',
+        ])
+            ->where('status', 'open')
+            ->whereHas('details', function ($query) {
+                $query->whereNull('whl_item_id');
+            })
+            ->orderByDesc('id')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'count' => $data->count(),
+            'data' => $data,
+        ], 200);
+    }
+
     public function deleteTransaction(Request $request)
     {
         $request->validate([
@@ -174,9 +211,11 @@ class GrnController extends Controller
 
             $detail = GrnDetail::findOrFail($request->input('id'));
 
-            // Reduce the qty from the WhlItem
-            $whlItem = WhlItem::findOrFail($detail->whl_item_id);
-            $whlItem->decrement('qty', $detail->qty);
+            // Reduce the qty from the WhlItem only when the detail is linked to one
+            if (!is_null($detail->whl_item_id)) {
+                $whlItem = WhlItem::findOrFail($detail->whl_item_id);
+                $whlItem->decrement('qty', $detail->qty);
+            }
 
             // Soft-delete the GrnDetail (sets active = false)
             $detail->delete();
@@ -186,6 +225,90 @@ class GrnController extends Controller
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Transaction deleted successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function commitTransaction(Request $request)
+    {
+        $request->validate([
+            'grn_detail_ids'   => 'required|array|min:1',
+            'grn_detail_ids.*' => 'integer|exists:grn_details,id',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $committed = [];
+            $skipped   = [];
+            $grnIds    = [];
+
+            foreach ($request->input('grn_detail_ids') as $detailId) {
+                $detail = GrnDetail::findOrFail($detailId);
+                $grnIds[$detail->grn_id] = $detail->grn_id;
+
+                if (!is_null($detail->whl_item_id)) {
+                    $skipped[] = ['grn_detail_id' => $detail->id, 'reason' => 'Already committed to a WhlItem'];
+                    continue;
+                }
+
+                if (!$detail->warehouse_location_id || !$detail->stock_item_id) {
+                    $skipped[] = ['grn_detail_id' => $detail->id, 'reason' => 'Missing warehouse_location_id or stock_item_id'];
+                    continue;
+                }
+
+                $whlItem = WhlItem::firstOrCreate(
+                    [
+                        'whl_id'        => $detail->warehouse_location_id,
+                        'stock_item_id' => $detail->stock_item_id,
+                    ],
+                    ['qty' => 0]
+                );
+
+                $whlItem->increment('qty', $detail->qty);
+
+                $detail->whl_item_id = $whlItem->id;
+                $detail->save();
+
+                $committed[] = [
+                    'grn_detail_id' => $detail->id,
+                    'whl_item_id'   => $whlItem->id,
+                    'stock_item_id' => $detail->stock_item_id,
+                    'location_id'   => $detail->warehouse_location_id,
+                    'qty'           => $detail->qty,
+                ];
+            }
+
+            foreach ($grnIds as $grnId) {
+                $grn = Grn::find($grnId);
+
+                if (!$grn) {
+                    continue;
+                }
+
+                $hasPendingDetails = GrnDetail::where('grn_id', $grnId)
+                    ->whereNull('whl_item_id')
+                    ->exists();
+
+                if (!$hasPendingDetails && $grn->status !== 'completed') {
+                    $grn->status = 'completed';
+                    $grn->save();
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status'    => 'success',
+                'message'   => 'Commit completed',
+                'committed' => $committed,
+                'skipped'   => $skipped,
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -249,21 +372,23 @@ class GrnController extends Controller
             }
 
             // Find or create a WhlItem for this location + stock_item
-            $whlItem = WhlItem::firstOrCreate(
-                [
-                    'whl_id'        => $request->input('location_id'),
-                    'stock_item_id' => $stockItemId,
-                ],
-                ['qty' => 0]
-            );
+            // $whlItem = WhlItem::firstOrCreate(
+            //     [
+            //         'whl_id'        => $request->input('location_id'),
+            //         'stock_item_id' => $stockItemId,
+            //     ],
+            //     ['qty' => 0]
+            // );
 
             // Increment the stock quantity on the WhlItem
-            $whlItem->increment('qty', $request->input('quantity'));
+            // $whlItem->increment('qty', $request->input('quantity'));
 
             // Create the GRN detail record
             GrnDetail::create([
                 'grn_id'        => $request->input('grn_id'),
-                'whl_item_id'   => $whlItem->id,
+                // 'whl_item_id'   => $whlItem->id,
+                'stock_item_id' => $request->input('stock_item_id'),
+                'warehouse_location_id' => $request->input('location_id'),
                 'qty'           => $request->input('quantity'),
                 'available_qty' => $request->input('quantity'),
                 'grn_price'     => $request->input('grn_price'),
@@ -276,7 +401,7 @@ class GrnController extends Controller
                 'message' => 'Transaction added successfully',
                 'data'    => [
                     'grn_id'        => $request->input('grn_id'),
-                    'whl_item_id'   => $whlItem->id,
+                    // 'whl_item_id'   => $whlItem->id,
                     'location_id'   => $request->input('location_id'),
                     'stock_item_id' => $stockItemId,
                     'quantity'      => $request->input('quantity'),

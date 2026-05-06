@@ -561,8 +561,10 @@ Route::prefix('v1')->group(function () {
 
         // GRNs CRUD
         Route::post('grns/addTransaction', 'GrnController@addTransaction')->name('grns.addTransaction');
+        Route::post('grns/commitTransaction', 'GrnController@commitTransaction')->name('grns.commitTransaction');
         Route::post('grns/deleteTransaction', 'GrnController@deleteTransaction')->name('grns.deleteTransaction');
         Route::post('grns/complete', 'GrnController@updateStatus')->name('grns.updateStatus');
+        Route::get('grns/open/full-details', 'GrnController@getOpenGrnsWithRelations')->name('grns.openFullDetails');
         Route::get('grns/{id}/transactions', 'GrnController@getTransactions')->name('grns.getTransactions');
         Route::post('grns/search', 'GrnController@search')->name('grns.search');
         Route::apiResource('grns', 'GrnController')->only(['index', 'show', 'store', 'destroy']);

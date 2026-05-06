@@ -180,6 +180,26 @@ $navigator_json = '
        ]
     },
 
+    
+   {
+       "caption":"QC Management",
+       "id":"qc-management",
+       "icon":"fas fa-check",
+       "type":"folder",
+       "permitted" : 0,
+       "nodes":[
+
+
+         {
+            "caption":"Grn Confirmation",
+            "icon":"fas fa-circle",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/openGrns"
+         }
+      ]
+   },
+
    {
        "caption":"Reports",
        "id":"report-management",

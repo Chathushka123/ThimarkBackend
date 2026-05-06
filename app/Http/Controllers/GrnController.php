@@ -369,6 +369,7 @@ class GrnController extends Controller
                         'message' => 'No stock item is assigned to this location. Please provide stock_item_id.',
                     ], 422);
                 }
+                $request->merge(['stock_item_id' => $stockItemId]);
             }
 
             // Find or create a WhlItem for this location + stock_item

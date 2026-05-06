@@ -15,10 +15,15 @@ class PurchaseOrderRepository
 
     public function getApprovedAndSentOrders()
     {
-        return PurchaseOrder::with(['supplier', 'items'])
+        return PurchaseOrder::select('id', 'po_number')
             // ->whereIn('status', ['APPROVED', 'SENT'])
-            ->orderByDesc('order_date')
+            ->orderByDesc('id')
             ->get();
+    }
+
+    public function getPurchaseOrderDetails($id)
+    {
+        return PurchaseOrder::with(['supplier', 'items.material'])->find($id);
     }
 
     public function getPurchaseOrder($id)

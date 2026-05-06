@@ -40,6 +40,16 @@ class PurchaseOrderController extends Controller
         return $this->repo->getPurchaseOrder($id) ?: response()->json(['message' => 'Purchase order not found'], 404);
     }
 
+    // Get full purchase order details (with supplier, items and material) by id
+    public function details($id)
+    {
+        $po = $this->repo->getPurchaseOrderDetails($id);
+        if (!$po) {
+            return response()->json(['message' => 'Purchase order not found'], 404);
+        }
+        return response()->json(['status' => 'success', 'data' => $po], 200);
+    }
+
     // Create purchase order
     public function store(Request $request)
     {

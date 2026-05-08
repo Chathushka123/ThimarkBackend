@@ -49,7 +49,7 @@ class StockMaterialController extends Controller
             'size' => 'nullable|array',
             'unit_price' => 'nullable|numeric',
             'uom_id' => 'sometimes|required|exists:uoms,id',
-            'category' => 'nullable|in:material,consumable,returnable',
+            'category' => 'nullable|in:material,consumble,returnable',
         ]);
         if (!isset($validated['size'])) {
             $validated['size'] = $stockMaterial->size ?? ['base_size'];
@@ -74,7 +74,7 @@ class StockMaterialController extends Controller
             ->get();
     }
 
-        public function printStickers()
+    public function printStickers()
     {
         $materials = StockMaterial::where('active', '=', 1)->get();
         $pdf = PDF::loadView('print.material_stickers', ['materials' => $materials]);

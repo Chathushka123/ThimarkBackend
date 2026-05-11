@@ -549,6 +549,7 @@ Route::prefix('v1')->group(function () {
         Route::get('stock-materials/search', 'StockMaterialController@search');
         Route::get('stock-materials/stickers', 'StockMaterialController@printStickers')->name('material.stickers');
         Route::get('stock-materials/stickers/{ids}', 'StockMaterialController@printStickersByIds')->name('material.stickersbyIds');
+        Route::get('stock-materials/by-warehouse', 'StockMaterialController@getMaterialByWarehouse');
         Route::apiResource('stock-materials', 'StockMaterialController');
 
 

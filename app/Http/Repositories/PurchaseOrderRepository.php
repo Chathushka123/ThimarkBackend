@@ -3,6 +3,7 @@
 namespace App\Http\Repositories;
 
 use App\PurchaseOrder;
+use App\PurchaseOrderPayment;
 use Illuminate\Support\Facades\DB;
 use Exception;
 
@@ -23,12 +24,41 @@ class PurchaseOrderRepository
 
     public function getPurchaseOrderDetails($id)
     {
-        return PurchaseOrder::with(['supplier', 'items.material'])->find($id);
+        $po = PurchaseOrder::with(['supplier', 'items.material'])->find($id);
+
+        return $this->appendGrnAndBalanceQty($po);
     }
 
     public function getPurchaseOrder($id)
     {
-        return PurchaseOrder::with(['supplier', 'items'])->find($id);
+        $po = PurchaseOrder::with(['supplier', 'items'])->find($id);
+
+        return $this->appendGrnAndBalanceQty($po);
+    }
+
+    private function appendGrnAndBalanceQty($po)
+    {
+        if (!$po) {
+            return null;
+        }
+
+        $grnQtyByMaterial = DB::table('grns')
+            ->join('grn_details', 'grn_details.grn_id', '=', 'grns.id')
+            ->where('grns.rmpono', $po->id)
+            ->where('grns.active', 1)
+            ->where('grn_details.active', 1)
+            ->groupBy('grn_details.stock_item_id')
+            ->selectRaw('grn_details.stock_item_id as material_id, SUM(grn_details.qty) as grn_qty')
+            ->pluck('grn_qty', 'material_id');
+
+        $po->items->transform(function ($item) use ($grnQtyByMaterial) {
+            $grnQty = (float) ($grnQtyByMaterial[$item->material_id] ?? 0);
+            $item->grn_qty = $grnQty;
+            $item->balance_qty = (float) $item->quantity - $grnQty;
+            return $item;
+        });
+
+        return $po;
     }
 
     public function createPurchaseOrder($data)
@@ -122,5 +152,32 @@ class PurchaseOrderRepository
         }
 
         return $po->load(['supplier', 'items']);
+    }
+
+    public function createPaymentTransaction(int $id, array $data)
+    {
+        $po = PurchaseOrder::find($id);
+        if (!$po) {
+            throw new \Exception('Purchase order not found');
+        }
+
+        return PurchaseOrderPayment::create([
+            'purchase_order_id' => $id,
+            'amount' => $data['amount'],
+            'note' => $data['note'],
+            'payment_date' => now()->toDateString(),
+        ]);
+    }
+
+    public function getPaymentTransactions(int $id)
+    {
+        $po = PurchaseOrder::find($id);
+        if (!$po) {
+            return null;
+        }
+
+        return PurchaseOrderPayment::where('purchase_order_id', $id)
+            ->orderByDesc('id')
+            ->get();
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Grn;
 use App\GrnDetail;
+use App\StockMaterial;
 use App\WhlItem;
 use App\WarehouseLocation;
 use Illuminate\Http\Request;
@@ -370,30 +371,70 @@ class GrnController extends Controller
                     ], 422);
                 }
                 $request->merge(['stock_item_id' => $stockItemId]);
+
+                $item = StockMaterial::find($stockItemId);
+                if (!$item) {
+                    throw new \Exception('Stock item not found for the provided stock_item_id.');
+                }
+
+                if ($item->category == 'material') {
+                    GrnDetail::create([
+                        'grn_id'        => $request->input('grn_id'),
+                        // 'whl_item_id'   => $whlItem->id,
+                        'stock_item_id' => $request->input('stock_item_id'),
+                        'warehouse_location_id' => $request->input('location_id'),
+                        'qty'           => $request->input('quantity'),
+                        'available_qty' => $request->input('quantity'),
+                        'grn_price'     => $request->input('grn_price'),
+                    ]);
+                } else {
+                    // Find or create a WhlItem for this location + stock_item
+                    $whlItem = WhlItem::firstOrCreate(
+                        [
+                            'whl_id'        => $request->input('location_id'),
+                            'stock_item_id' => $stockItemId,
+                        ],
+                        ['qty' => 0]
+                    );
+
+                    // Increment the stock quantity on the WhlItem
+                    $whlItem->increment('qty', $request->input('quantity'));
+
+                    // Create the GRN detail record
+                    GrnDetail::create([
+                        'grn_id'        => $request->input('grn_id'),
+                        'whl_item_id'   => $whlItem->id,
+                        'stock_item_id' => $request->input('stock_item_id'),
+                        'warehouse_location_id' => $request->input('location_id'),
+                        'qty'           => $request->input('quantity'),
+                        'available_qty' => $request->input('quantity'),
+                        'grn_price'     => $request->input('grn_price'),
+                    ]);
+                }
+            } else {
+                // Find or create a WhlItem for this location + stock_item
+                $whlItem = WhlItem::firstOrCreate(
+                    [
+                        'whl_id'        => $request->input('location_id'),
+                        'stock_item_id' => $stockItemId,
+                    ],
+                    ['qty' => 0]
+                );
+
+                // Increment the stock quantity on the WhlItem
+                $whlItem->increment('qty', $request->input('quantity'));
+
+                // Create the GRN detail record
+                GrnDetail::create([
+                    'grn_id'        => $request->input('grn_id'),
+                    'whl_item_id'   => $whlItem->id,
+                    'stock_item_id' => $request->input('stock_item_id'),
+                    'warehouse_location_id' => $request->input('location_id'),
+                    'qty'           => $request->input('quantity'),
+                    'available_qty' => $request->input('quantity'),
+                    'grn_price'     => $request->input('grn_price'),
+                ]);
             }
-
-            // Find or create a WhlItem for this location + stock_item
-            // $whlItem = WhlItem::firstOrCreate(
-            //     [
-            //         'whl_id'        => $request->input('location_id'),
-            //         'stock_item_id' => $stockItemId,
-            //     ],
-            //     ['qty' => 0]
-            // );
-
-            // Increment the stock quantity on the WhlItem
-            // $whlItem->increment('qty', $request->input('quantity'));
-
-            // Create the GRN detail record
-            GrnDetail::create([
-                'grn_id'        => $request->input('grn_id'),
-                // 'whl_item_id'   => $whlItem->id,
-                'stock_item_id' => $request->input('stock_item_id'),
-                'warehouse_location_id' => $request->input('location_id'),
-                'qty'           => $request->input('quantity'),
-                'available_qty' => $request->input('quantity'),
-                'grn_price'     => $request->input('grn_price'),
-            ]);
 
             DB::commit();
 

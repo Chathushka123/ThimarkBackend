@@ -90,4 +90,23 @@ class StockMaterialController extends Controller
         $pdf->setPaper('A4', 'portrait');
         return $pdf->stream('material_stickers_' . date('Y_m_d_H_i_s') . '.pdf');
     }
+
+    public function getMaterialByWarehouse(Request $request)
+    {
+        $validated = $request->validate([
+            'warehouseId' => 'required|integer|exists:warehouses,id',
+        ]);
+
+        return StockMaterial::withoutGlobalScope('active')
+            ->join('whl_items', 'whl_items.stock_item_id', '=', 'stock_materials.id')
+            ->join('warehouse_locations', 'warehouse_locations.id', '=', 'whl_items.whl_id')
+            ->where('warehouse_locations.warehouse_id', $validated['warehouseId'])
+            ->where('stock_materials.active', '=', 1)
+            ->where('whl_items.active', '=', 1)
+            ->where('warehouse_locations.active', '=', 1)
+            ->where('whl_items.qty', '>', 0)
+            ->select('stock_materials.id', 'stock_materials.name', 'stock_materials.code')
+            ->distinct()
+            ->get();
+    }
 }

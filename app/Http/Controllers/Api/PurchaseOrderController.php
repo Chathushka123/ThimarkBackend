@@ -50,6 +50,42 @@ class PurchaseOrderController extends Controller
         return response()->json(['status' => 'success', 'data' => $po], 200);
     }
 
+    public function paymentTransactions(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'purchase_order_id' => 'required|integer|exists:purchase_orders,id',
+            'amount' => 'required|numeric|min:0.01',
+            'note' => 'required|string',
+        ]);
+
+        if ((int) $validated['purchase_order_id'] !== (int) $id) {
+            return response()->json([
+                'message' => 'purchase_order_id must match route id',
+            ], 422);
+        }
+
+        try {
+            $payment = $this->repo->createPaymentTransaction((int) $id, $validated);
+            return response()->json(['status' => 'success', 'data' => $payment], 201);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getPaymentTransactions($id)
+    {
+        $transactions = $this->repo->getPaymentTransactions((int) $id);
+
+        if (is_null($transactions)) {
+            return response()->json(['message' => 'Purchase order not found'], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $transactions,
+        ], 200);
+    }
+
     // Create purchase order
     public function store(Request $request)
     {

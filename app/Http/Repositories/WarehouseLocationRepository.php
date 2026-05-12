@@ -13,7 +13,7 @@ class WarehouseLocationRepository
 
     public function find($id)
     {
-        return WarehouseLocation::with(['warehouse', 'whlItems'])->findOrFail($id);
+        return WarehouseLocation::with(['warehouse', 'whlItems', 'stockMaterial'])->findOrFail($id);
     }
 
     public function create(array $data)

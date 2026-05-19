@@ -623,6 +623,44 @@ Route::prefix('v1')->group(function () {
         // Purchase Order Status Report APIs
         Route::get('reports/purchase-order-status', 'Api\\PurchaseOrderStatusReportController@index');
         Route::get('reports/purchase-order-status/download', 'Api\\PurchaseOrderStatusReportController@download');
+
+            // Dashboard 1 - Procurement Spend Overview
+            Route::get('dashboard/procurement/summary', 'Api\DashboardController@procurementSummary');
+            Route::get('dashboard/procurement/spend-by-supplier', 'Api\DashboardController@procurementSpendBySupplier');
+            Route::get('dashboard/procurement/spend-by-category', 'Api\DashboardController@procurementSpendByCategory');
+            Route::get('dashboard/procurement/trend', 'Api\DashboardController@procurementTrend');
+            Route::get('dashboard/procurement/orders', 'Api\DashboardController@procurementOrders');
+
+            // Dashboard 2 - Inventory Health
+            Route::get('dashboard/inventory/summary', 'Api\DashboardController@inventorySummary');
+            Route::get('dashboard/inventory/items', 'Api\DashboardController@inventoryItems');
+            Route::get('dashboard/inventory/low-stock', 'Api\DashboardController@inventoryLowStock');
+
+            // Dashboard 3 - Consumption & Batch Efficiency
+            Route::get('dashboard/consumption/summary', 'Api\DashboardController@consumptionSummary');
+            Route::get('dashboard/consumption/by-batch', 'Api\DashboardController@consumptionByBatch');
+            Route::get('dashboard/consumption/by-material', 'Api\DashboardController@consumptionByMaterial');
+            Route::get('dashboard/consumption/returnables', 'Api\DashboardController@consumptionReturnables');
+
+            // Dashboard 4 - GRN & Supplier Performance
+            Route::get('dashboard/grn/summary', 'Api\DashboardController@grnSummary');
+            Route::get('dashboard/grn/by-supplier', 'Api\DashboardController@grnBySupplier');
+            Route::get('dashboard/grn/open-stuck', 'Api\DashboardController@grnOpenStuck');
+            Route::get('dashboard/grn/price-variance', 'Api\DashboardController@grnPriceVariance');
+            Route::get('dashboard/grn/list', 'Api\DashboardController@grnList');
+
+            // Dashboard 5 - Payments & Payables
+            Route::get('dashboard/payments/summary', 'Api\DashboardController@paymentsSummary');
+            Route::get('dashboard/payments/by-supplier', 'Api\DashboardController@paymentsBySupplier');
+            Route::get('dashboard/payments/trend', 'Api\DashboardController@paymentsTrend');
+            Route::get('dashboard/payments/list', 'Api\DashboardController@paymentsList');
+
+            // Shared filters
+            Route::get('dashboard/filters/warehouses', 'Api\DashboardController@filtersWarehouses');
+            Route::get('dashboard/filters/suppliers', 'Api\DashboardController@filtersSuppliers');
+            Route::get('dashboard/filters/categories', 'Api\DashboardController@filtersCategories');
+            Route::get('dashboard/filters/batches', 'Api\DashboardController@filtersBatches');
+            Route::get('dashboard/filters/users', 'Api\DashboardController@filtersUsers');
     });
 });
 

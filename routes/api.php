@@ -549,6 +549,7 @@ Route::prefix('v1')->group(function () {
         Route::get('stock-materials/search', 'StockMaterialController@search');
         Route::get('stock-materials/stickers', 'StockMaterialController@printStickers')->name('material.stickers');
         Route::get('stock-materials/stickers/{ids}', 'StockMaterialController@printStickersByIds')->name('material.stickersbyIds');
+        Route::get('stock-materials/by-warehouse', 'StockMaterialController@getMaterialByWarehouse');
         Route::apiResource('stock-materials', 'StockMaterialController');
 
 
@@ -587,6 +588,8 @@ Route::prefix('v1')->group(function () {
         // Purchase Order APIs
         Route::get('purchase-orders/approved-sent', 'Api\PurchaseOrderController@approvedAndSent');
         Route::get('purchase-orders/{id}/details', 'Api\PurchaseOrderController@details');
+        Route::get('purchase-orders/{id}/payment-transactions', 'Api\PurchaseOrderController@getPaymentTransactions');
+        Route::post('purchase-orders/{id}/payment-transactions', 'Api\PurchaseOrderController@paymentTransactions');
         Route::get('purchase-orders', 'Api\PurchaseOrderController@index');
         Route::get('purchase-orders/{id}', 'Api\PurchaseOrderController@show');
         Route::post('purchase-orders', 'Api\PurchaseOrderController@store');

@@ -19,7 +19,8 @@ class GrnReportRepository
                 gd.grn_price AS unite_price,
                 gd.qty,
                 u.email AS created_by,
-                g.status as grn_status
+                g.status as grn_status,
+                g.remark as remarks
                 
             FROM grns g
             LEFT JOIN purchase_orders po ON po.id = g.rmpono

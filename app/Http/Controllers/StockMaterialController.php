@@ -49,7 +49,7 @@ class StockMaterialController extends Controller
             'size' => 'nullable|array',
             'unit_price' => 'nullable|numeric',
             'uom_id' => 'sometimes|required|exists:uoms,id',
-            'category' => 'nullable|in:material,consumable,returnable',
+            'category' => 'nullable|in:material,consumble,returnable',
         ]);
         if (!isset($validated['size'])) {
             $validated['size'] = $stockMaterial->size ?? ['base_size'];
@@ -74,7 +74,7 @@ class StockMaterialController extends Controller
             ->get();
     }
 
-        public function printStickers()
+    public function printStickers()
     {
         $materials = StockMaterial::where('active', '=', 1)->get();
         $pdf = PDF::loadView('print.material_stickers', ['materials' => $materials]);
@@ -89,5 +89,24 @@ class StockMaterialController extends Controller
         $pdf = PDF::loadView('print.material_stickers', ['materials' => $materials]);
         $pdf->setPaper('A4', 'portrait');
         return $pdf->stream('material_stickers_' . date('Y_m_d_H_i_s') . '.pdf');
+    }
+
+    public function getMaterialByWarehouse(Request $request)
+    {
+        $validated = $request->validate([
+            'warehouseId' => 'required|integer|exists:warehouses,id',
+        ]);
+
+        return StockMaterial::withoutGlobalScope('active')
+            ->join('whl_items', 'whl_items.stock_item_id', '=', 'stock_materials.id')
+            ->join('warehouse_locations', 'warehouse_locations.id', '=', 'whl_items.whl_id')
+            ->where('warehouse_locations.warehouse_id', $validated['warehouseId'])
+            ->where('stock_materials.active', '=', 1)
+            ->where('whl_items.active', '=', 1)
+            ->where('warehouse_locations.active', '=', 1)
+            ->where('whl_items.qty', '>', 0)
+            ->select('stock_materials.id', 'stock_materials.name', 'stock_materials.code')
+            ->distinct()
+            ->get();
     }
 }

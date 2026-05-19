@@ -221,13 +221,6 @@ $navigator_json = '
             "type":"node",
             "permitted" : 0,
             "path":"/grnReport"
-         },
-         {
-            "caption":"Grn Confirmation",
-            "icon":"fas fa-circle",
-            "type":"node",
-            "permitted" : 0,
-            "path":"/openGrns"
          }
       ]
    },

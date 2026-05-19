@@ -194,7 +194,7 @@ class MrnRepository
                     }
                 }
             }
-
+            $this->validateMrnMaterial($mrn->id);
             DB::commit();
 
             // Load relationships for response
@@ -212,6 +212,27 @@ class MrnRepository
                 'status' => 'error',
                 'message' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    public function validateMrnMaterial($mrnId)
+    {
+        $mrn = Mrn::with(['details'])->findOrFail($mrnId);
+        foreach ($mrn->details as $detail) {
+            if ($detail->active == 1) {
+                $stockItem = $detail->stockItem->id;
+                $availableQty = $detail->stockItem->warehouseLocations()
+                    ->withoutGlobalScope('active')
+                    ->join('whl_items', 'warehouse_locations.id', '=', 'whl_items.whl_id')
+                    ->where('whl_items.stock_item_id', $stockItem)
+                    ->where('whl_items.active', 1)
+                    ->where('warehouse_locations.active', 1)
+                    ->where('warehouse_locations.warehouse_id', $mrn->warehouse_id)
+                    ->sum('whl_items.qty');
+                if ($availableQty < $detail->qty) {
+                    throw new Exception("Insufficient stock for item ID {$detail->stockItem->code}-{$detail->stockItem->name}. Available: {$availableQty}, Required: {$detail->qty}");
+                }
+            }
         }
     }
 

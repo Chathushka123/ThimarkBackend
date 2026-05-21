@@ -3,6 +3,7 @@
 namespace App\Http\Repositories;
 
 use App\Batch;
+use App\BatchDetail;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -21,9 +22,9 @@ class BatchRepository
 
         $validator = Validator::make($request->all(), [
             'id' => 'nullable|integer|min:1',
-            'model_id' => 'required|integer|exists:models,id',
+            'main_model_id' => 'required|integer|exists:main_models,id',
             'batch_no' => ['required', 'string', 'max:255', Rule::unique('batches', 'batch_no')->ignore($id)],
-            'qty_json' => 'required',
+
         ]);
 
         if ($validator->fails()) {
@@ -33,34 +34,47 @@ class BatchRepository
             ], 400);
         }
 
-        $qtyJson = $request->input('qty_json');
-        if (is_string($qtyJson)) {
-            json_decode($qtyJson, true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => ['qty_json' => ['The qty_json must be a valid JSON string or array.']],
-                ], 400);
-            }
-        } elseif (!is_array($qtyJson)) {
-            return response()->json([
-                'status' => 'error',
-                'message' => ['qty_json' => ['The qty_json must be a valid JSON string or array.']],
-            ], 400);
-        }
+
 
         try {
             $payload = [
-                'model_id' => $request->input('model_id'),
-                'batch_no' => $request->input('batch_no'),
-                'qty_json' => $qtyJson,
+                'main_model_id' => $request->input('main_model_id'),
+                'batch_no' => $request->input('batch_no')
             ];
-
+            $qty_data = $request->input('qty_data');
             if ($id) {
                 $model = Batch::findOrFail($id);
                 $model->update($payload);
             } else {
                 $model = Batch::create($payload);
+            }
+
+            if ($qty_data && is_array($qty_data)) {
+                foreach ($qty_data as $item) {
+                    $rowState = $item['_rowstate'] ?? null;
+
+                    if ($rowState === 'NEW') {
+                        BatchDetail::create([
+                            'batch_id' => $model->id,
+                            'model_id' => $item['model_id'],
+                            'quantity' => $item['quantity'],
+                            'active' => true,
+                        ]);
+                    } elseif ($rowState === 'DELETED') {
+                        if (!empty($item['id'])) {
+                            BatchDetail::where('id', $item['id'])->update([
+                                'active' => 0,
+                            ]);
+                        }
+                    } else {
+                        if (!empty($item['id'])) {
+                            BatchDetail::where('id', $item['id'])->update([
+                                'model_id' => $item['model_id'],
+                                'quantity' => $item['quantity'],
+                            ]);
+                        }
+                    }
+                }
             }
 
             return response()->json([
@@ -79,19 +93,19 @@ class BatchRepository
     {
         $id         = $request->input('id');
         $batch_no   = $request->input('batch_no');
-        $model_name = $request->input('model_name');
+        $main_model_name = $request->input('main_model_name');
 
         $results = Batch::select(
             'batches.id',
             'batches.batch_no',
-            'models.name as model_name',
+            'main_models.name as main_model_name',
             'batches.qty_json',
             'batches.model_id',
         )
-            ->join('models', 'batches.model_id', '=', 'models.id')
+            ->join('main_models', 'batches.main_model_id', '=', 'main_models.id')
             ->where('batches.id',       'LIKE', ($id         === '%' ? '%' : '%' . $id . '%'))
             ->where('batches.batch_no', 'LIKE', ($batch_no   === '%' ? '%' : '%' . $batch_no . '%'))
-            ->where('models.name',      'LIKE', ($model_name === '%' ? '%' : '%' . $model_name . '%'))
+            ->where('main_models.name',      'LIKE', ($main_model_name === '%' ? '%' : '%' . $main_model_name . '%'))
             ->orderBy('batches.id', 'desc')
             ->get();
 
@@ -115,7 +129,7 @@ class BatchRepository
         }
 
         try {
-            $batch = Batch::with('model')
+            $batch = Batch::with('mainModel', 'batchDetails.model')->where('active', true)
                 ->where('id', $request->input('id'))
                 ->where('active', 1)
                 ->firstOrFail();

@@ -587,6 +587,8 @@ Route::prefix('v1')->group(function () {
 
         // Purchase Order APIs
         Route::get('purchase-orders/approved-sent', 'Api\PurchaseOrderController@approvedAndSent');
+        Route::get('purchase-orders/active-summary', 'Api\PurchaseOrderController@activeSummary');
+        Route::get('purchase-orders/filtered-summary', 'Api\PurchaseOrderController@filteredSummary');
         Route::get('purchase-orders/{id}/details', 'Api\PurchaseOrderController@details');
         Route::get('purchase-orders/{id}/payment-transactions', 'Api\PurchaseOrderController@getPaymentTransactions');
         Route::post('purchase-orders/{id}/payment-transactions', 'Api\PurchaseOrderController@paymentTransactions');

@@ -10,7 +10,7 @@ use InvalidArgumentException;
 
 class DashboardService
 {
-    private const PO_STATUSES = ['DRAFT', 'APPROVED', 'SENT', 'RECEIVED', 'CANCELLED'];
+    private const PO_STATUSES = ['DRAFT', 'OPEN', 'PENDING APPROVAL', 'APPROVED', 'SENT', 'RECEIVED', 'CLOSED', 'CANCELLED'];
     private const MRN_STATUSES = ['open', 'finalized', 'complete'];
     private const GRN_STATUSES = ['open', 'completed'];
 

@@ -28,6 +28,30 @@ class PurchaseOrderController extends Controller
         return $this->repo->getPurchaseOrders();
     }
 
+    // Summary of POs in APPROVED, SENT, RECEIVED status
+    public function activeSummary()
+    {
+        return response()->json([
+            'status' => 'success',
+            'data'   => $this->repo->getActiveSummary(),
+        ], 200);
+    }
+    // Filtered summary by date range, date field and one or more statuses
+    public function filteredSummary(Request $request)
+    {
+        $validated = $request->validate([
+            'statuses'   => 'required|array|min:1',
+            'statuses.*' => 'required|string|in:DRAFT,OPEN,PENDING APPROVAL,APPROVED,SENT,RECEIVED,CLOSED,CANCELLED',
+            'date_field' => 'required|string|in:created_at,order_date,expected_delivery_date',
+            'from'       => 'nullable|date_format:Y-m-d',
+            'to'         => 'nullable|date_format:Y-m-d|after_or_equal:from',
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $this->repo->getFilteredSummary($validated),
+        ], 200);
+    }
     // Get APPROVED and SENT purchase orders
     public function approvedAndSent()
     {
@@ -108,6 +132,8 @@ class PurchaseOrderController extends Controller
                 'items.*.unit_price'       => 'required|numeric|min:0',
                 'items.*.total'            => 'required|numeric|min:0',
                 'items.*.expected_delivery_date' => 'nullable|date_format:Y-m-d',
+                'payment_date'                   => 'nullable|date_format:Y-m-d',
+                'in_house_date'                  => 'nullable|date_format:Y-m-d',
             ]);
             $po = $this->repo->createPurchaseOrder($validated);
             return response()->json($po, 201);
@@ -140,6 +166,8 @@ class PurchaseOrderController extends Controller
             'items.*.total'            => 'nullable|numeric|min:0',
             'items.*.expected_delivery_date' => 'nullable|date_format:Y-m-d',
             'items.*._rowstate'        => 'required_with:items|string|in:NEW,UPDATED,DELETED,MODIFIED,POPULATED',
+            'payment_date'             => 'nullable|date_format:Y-m-d',
+            'in_house_date'            => 'nullable|date_format:Y-m-d',
         ]);
 
         $validator->after(function ($v) use ($request) {

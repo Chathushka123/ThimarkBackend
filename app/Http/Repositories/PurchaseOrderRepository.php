@@ -9,6 +9,102 @@ use Exception;
 
 class PurchaseOrderRepository
 {
+    public function getActiveSummary(): array
+    {
+        $statuses = ['APPROVED', 'SENT', 'RECEIVED'];
+
+        $allPos = PurchaseOrder::with(['supplier', 'items.material', 'payments'])
+            ->whereIn('status', $statuses)
+            ->get();
+
+        return $this->buildSummaryByStatus($allPos, $statuses);
+    }
+
+    public function getFilteredSummary(array $filters): array
+    {
+        $statuses  = $filters['statuses'];
+        $dateField = $filters['date_field'];  // created_at | order_date | expected_delivery_date
+        $from      = $filters['from'] ?? null;
+        $to        = $filters['to'] ?? null;
+
+        $query = PurchaseOrder::with(['supplier', 'items.material', 'payments'])
+            ->whereIn('status', $statuses);
+
+        if ($from) {
+            $query->whereDate($dateField, '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate($dateField, '<=', $to);
+        }
+
+        $allPos = $query->get();
+
+        return $this->buildSummaryByStatus($allPos, $statuses);
+    }
+
+    private function buildSummaryByStatus($allPos, array $statuses): array
+    {
+        $result = [];
+
+        foreach ($statuses as $status) {
+            $statusPos = $allPos->where('status', $status)->values();
+
+            $poDetails = $statusPos->map(function ($po) {
+                $paidAmount = $po->payments->sum('amount');
+
+                return [
+                    'id'                     => $po->id,
+                    'po_number'              => $po->po_number,
+                    'supplier_name'          => $po->supplier->name ?? null,
+                    'order_date'             => $po->order_date,
+                    'expected_delivery_date' => $po->expected_delivery_date,
+                    'payment_date'           => $po->payment_date,
+                    'in_house_date'          => $po->in_house_date,
+                    'subtotal'               => (float) $po->subtotal,
+                    'discount'               => (float) $po->discount,
+                    'tax'                    => (float) $po->tax,
+                    'shipping_cost'          => (float) $po->shipping_cost,
+                    'notes'                  => $po->notes,
+                    'status'                 => $po->status,
+                    'created_at'             => $po->created_at,
+                    'created_by'             => $po->created_by,
+                    'po_qty'                 => [
+                        'qty'       => (float) $po->items->sum('quantity'),
+                        'breakdown' => $po->items->map(fn($item) => [
+                            'material_name' => $item->material->name ?? null,
+                            'qty'           => (float) $item->quantity,
+                        ])->values(),
+                    ],
+                    'total_amount' => [
+                        'amount'    => (float) $po->items->sum('total'),
+                        'breakdown' => $po->items->map(fn($item) => [
+                            'material_name' => $item->material->name ?? null,
+                            'unit_price'    => (float) $item->unit_price,
+                            'total'         => (float) $item->total,
+                        ])->values(),
+                    ],
+                    'paid_amount' => [
+                        'amount'    => (float) $paidAmount,
+                        'breakdown' => $po->payments->values(),
+                    ],
+                    'balance' => [
+                        'amount' => (float) $po->total_amount - (float) $paidAmount,
+                    ],
+                ];
+            })->values();
+
+            $result[$status] = [
+                'po_details'            => $poDetails,
+                'total_qty_all_pos'     => $poDetails->sum(fn($po) => $po['po_qty']['qty']),
+                'total_amount_all_pos'  => $poDetails->sum(fn($po) => $po['total_amount']['amount']),
+                'total_balance_all_pos' => $poDetails->sum(fn($po) => $po['balance']['amount']),
+                'no_of_pos'             => $statusPos->count(),
+            ];
+        }
+
+        return $result;
+    }
+
     public function getPurchaseOrders()
     {
         return PurchaseOrder::with(['supplier', 'items'])->get();
@@ -86,6 +182,8 @@ class PurchaseOrderRepository
                 'shipping_cost'          => $data['shipping_cost'],
                 'total_amount'           => $data['total_amount'],
                 'notes'                  => $data['notes'] ?? null,
+                'payment_date'           => $data['payment_date'] ?? null,
+                'in_house_date'          => $data['in_house_date'] ?? null,
             ]);
 
             // Create PO items
@@ -124,6 +222,8 @@ class PurchaseOrderRepository
             'shipping_cost'          => $data['shipping_cost'] ?? null,
             'total_amount'           => $data['total_amount'] ?? null,
             'notes'                  => $data['notes'] ?? null,
+            'payment_date'           => $data['payment_date'] ?? null,
+            'in_house_date'          => $data['in_house_date'] ?? null,
         ], fn($v) => !is_null($v)));
 
         // Handle items by _rowstate

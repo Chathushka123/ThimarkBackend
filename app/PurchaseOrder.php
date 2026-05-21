@@ -34,6 +34,8 @@ class PurchaseOrder extends Model
         'shipping_cost',
         'total_amount',
         'notes',
+        'payment_date',
+        'in_house_date',
     ];
 
     public function supplier()
@@ -44,5 +46,10 @@ class PurchaseOrder extends Model
     public function items()
     {
         return $this->hasMany(PurchaseOrderItem::class)->with('material');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(PurchaseOrderPayment::class);
     }
 }

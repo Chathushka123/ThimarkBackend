@@ -57,13 +57,16 @@ class PurchaseOrderRepository
                 ->where('grn_details.active', 1)
                 ->select(
                     'grns.rmpono as po_id',
+                    'grns.id as grn_id',
                     'grn_details.stock_item_id',
                     'stock_materials.name as material_name',
-                    DB::raw('SUM(grn_details.qty) as qty'),
-                    DB::raw('SUM(grn_details.available_qty) as available_qty'),
-                    DB::raw('AVG(grn_details.grn_price) as grn_price')
+                    'grn_details.qty',
+                    'grn_details.available_qty',
+                    'grn_details.grn_price',
+                    DB::raw('grn_details.qty * grn_details.grn_price as grn_value')
                 )
-                ->groupBy('grns.rmpono', 'grn_details.stock_item_id', 'stock_materials.name')
+                ->orderBy('grns.id')
+                ->orderBy('grn_details.id')
                 ->get()
                 ->groupBy('po_id');
         }
@@ -118,13 +121,15 @@ class PurchaseOrderRepository
                     'grn_qty' => [
                         'qty'           => (float) $grnItems->sum('qty'),
                         'available_qty' => (float) $grnItems->sum('available_qty'),
-                        'grn_value'     => (float) $grnItems->sum(fn($g) => $g->grn_price * $g->qty),
+                        'grn_value'     => (float) $grnItems->sum('grn_value'),
+                        'grn_count'     => $grnItems->pluck('grn_id')->unique()->count(),
                         'breakdown'     => $grnItems->map(fn($g) => [
+                            'grn_id'        => $g->grn_id,
                             'material_name' => $g->material_name,
                             'qty'           => (float) $g->qty,
                             'available_qty' => (float) $g->available_qty,
                             'grn_price'     => (float) $g->grn_price,
-                            'grn_value'     => (float) ($g->grn_price * $g->qty),
+                            'grn_value'     => (float) $g->grn_value,
                         ])->values(),
                     ],
                 ];

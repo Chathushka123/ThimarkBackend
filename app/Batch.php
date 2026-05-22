@@ -9,11 +9,13 @@ class Batch extends Model
 {
     protected $fillable = [
         'model_id',
+        'main_model_id',
         'batch_no',
         'qty_json',
         'active',
         'created_by',
         'updated_by',
+
     ];
 
     protected $casts = [
@@ -47,6 +49,15 @@ class Batch extends Model
     public function model()
     {
         return $this->belongsTo(\App\Model::class, 'model_id');
+    }
+
+    public function mainModel()
+    {
+        return $this->belongsTo(MainModel::class, 'main_model_id');
+    }
+    public function batchDetails()
+    {
+        return $this->hasMany(BatchDetail::class, 'batch_id');
     }
 
     public function mrns()

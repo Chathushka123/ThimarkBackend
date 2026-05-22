@@ -116,7 +116,7 @@ class PurchaseOrderRepository
                         'breakdown' => $po->payments->values(),
                     ],
                     'balance' => [
-                        'amount' => (float) $po->total_amount - (float) $paidAmount,
+                        'amount' => ((float) $po->items->sum('total')) - (float) $paidAmount,
                     ],
                     'grn_qty' => [
                         'qty'           => (float) $grnItems->sum('qty'),

@@ -44,13 +44,41 @@ class PurchaseOrderRepository
 
     private function buildSummaryByStatus($allPos, array $statuses): array
     {
+        // Batch-load GRN details for all POs in a single query
+        $poIds = $allPos->pluck('id')->all();
+
+        $grnByPo = collect([]);
+        if (!empty($poIds)) {
+            $grnByPo = DB::table('grns')
+                ->join('grn_details', 'grn_details.grn_id', '=', 'grns.id')
+                ->join('stock_materials', 'stock_materials.id', '=', 'grn_details.stock_item_id')
+                ->whereIn('grns.rmpono', $poIds)
+                ->where('grns.active', 1)
+                ->where('grn_details.active', 1)
+                ->select(
+                    'grns.rmpono as po_id',
+                    'grns.id as grn_id',
+                    'grn_details.stock_item_id',
+                    'stock_materials.name as material_name',
+                    'grn_details.qty',
+                    'grn_details.available_qty',
+                    'grn_details.grn_price',
+                    DB::raw('grn_details.qty * grn_details.grn_price as grn_value')
+                )
+                ->orderBy('grns.id')
+                ->orderBy('grn_details.id')
+                ->get()
+                ->groupBy('po_id');
+        }
+
         $result = [];
 
         foreach ($statuses as $status) {
             $statusPos = $allPos->where('status', $status)->values();
 
-            $poDetails = $statusPos->map(function ($po) {
+            $poDetails = $statusPos->map(function ($po) use ($grnByPo) {
                 $paidAmount = $po->payments->sum('amount');
+                $grnItems   = $grnByPo->get($po->id, collect([]));
 
                 return [
                     'id'                     => $po->id,
@@ -88,17 +116,35 @@ class PurchaseOrderRepository
                         'breakdown' => $po->payments->values(),
                     ],
                     'balance' => [
-                        'amount' => (float) $po->total_amount - (float) $paidAmount,
+                        'amount' => ((float) $po->items->sum('total')) - (float) $paidAmount,
+                    ],
+                    'grn_qty' => [
+                        'qty'           => (float) $grnItems->sum('qty'),
+                        'available_qty' => (float) $grnItems->sum('available_qty'),
+                        'grn_value'     => (float) $grnItems->sum('grn_value'),
+                        'grn_count'     => $grnItems->pluck('grn_id')->unique()->count(),
+                        'breakdown'     => $grnItems->map(fn($g) => [
+                            'grn_id'        => $g->grn_id,
+                            'material_name' => $g->material_name,
+                            'qty'           => (float) $g->qty,
+                            'available_qty' => (float) $g->available_qty,
+                            'grn_price'     => (float) $g->grn_price,
+                            'grn_value'     => (float) $g->grn_value,
+                        ])->values(),
                     ],
                 ];
             })->values();
 
             $result[$status] = [
-                'po_details'            => $poDetails,
-                'total_qty_all_pos'     => $poDetails->sum(fn($po) => $po['po_qty']['qty']),
-                'total_amount_all_pos'  => $poDetails->sum(fn($po) => $po['total_amount']['amount']),
-                'total_balance_all_pos' => $poDetails->sum(fn($po) => $po['balance']['amount']),
-                'no_of_pos'             => $statusPos->count(),
+                'po_details'                    => $poDetails,
+                'total_qty_all_pos'             => $poDetails->sum(fn($po) => $po['po_qty']['qty']),
+                'total_amount_all_pos'          => $poDetails->sum(fn($po) => $po['total_amount']['amount']),
+                'total_balance_all_pos'         => $poDetails->sum(fn($po) => $po['balance']['amount']),
+                'total_paid_amount_all_pos'     => $poDetails->sum(fn($po) => $po['paid_amount']['amount']),
+                'total_grn_qty_all_pos'           => $poDetails->sum(fn($po) => $po['grn_qty']['qty']),
+                'total_grn_available_qty_all_pos' => $poDetails->sum(fn($po) => $po['grn_qty']['available_qty']),
+                'total_grn_value_all_pos'         => $poDetails->sum(fn($po) => $po['grn_qty']['grn_value']),
+                'no_of_pos'                     => $statusPos->count(),
             ];
         }
 

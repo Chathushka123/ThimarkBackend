@@ -147,6 +147,8 @@ Route::prefix('v1')->group(function () {
         Route::delete('routings', 'Api\RoutingController@destroy')->name('routings.destroy');
         Route::post('routings/getFullStructure', 'Api\RoutingController@getFullStructure')->name('routings.getFullStructure');
 
+
+
         // Search
         Route::get('searchByUuid/{uuid}', 'Api\SearchController@searchByUuid')->name('search.uuid');
         Route::post('searchByParameters', 'Api\SearchController@searchByParameters')->name('search.queryString');
@@ -629,43 +631,64 @@ Route::prefix('v1')->group(function () {
         Route::get('reports/purchase-order-status', 'Api\\PurchaseOrderStatusReportController@index');
         Route::get('reports/purchase-order-status/download', 'Api\\PurchaseOrderStatusReportController@download');
 
-            // Dashboard 1 - Procurement Spend Overview
-            Route::get('dashboard/procurement/summary', 'Api\DashboardController@procurementSummary');
-            Route::get('dashboard/procurement/spend-by-supplier', 'Api\DashboardController@procurementSpendBySupplier');
-            Route::get('dashboard/procurement/spend-by-category', 'Api\DashboardController@procurementSpendByCategory');
-            Route::get('dashboard/procurement/trend', 'Api\DashboardController@procurementTrend');
-            Route::get('dashboard/procurement/orders', 'Api\DashboardController@procurementOrders');
+        // Dashboard 1 - Procurement Spend Overview
+        Route::get('dashboard/procurement/summary', 'Api\DashboardController@procurementSummary');
+        Route::get('dashboard/procurement/spend-by-supplier', 'Api\DashboardController@procurementSpendBySupplier');
+        Route::get('dashboard/procurement/spend-by-category', 'Api\DashboardController@procurementSpendByCategory');
+        Route::get('dashboard/procurement/trend', 'Api\DashboardController@procurementTrend');
+        Route::get('dashboard/procurement/orders', 'Api\DashboardController@procurementOrders');
 
-            // Dashboard 2 - Inventory Health
-            Route::get('dashboard/inventory/summary', 'Api\DashboardController@inventorySummary');
-            Route::get('dashboard/inventory/items', 'Api\DashboardController@inventoryItems');
-            Route::get('dashboard/inventory/low-stock', 'Api\DashboardController@inventoryLowStock');
+        // Dashboard 2 - Inventory Health
+        Route::get('dashboard/inventory/summary', 'Api\DashboardController@inventorySummary');
+        Route::get('dashboard/inventory/items', 'Api\DashboardController@inventoryItems');
+        Route::get('dashboard/inventory/low-stock', 'Api\DashboardController@inventoryLowStock');
 
-            // Dashboard 3 - Consumption & Batch Efficiency
-            Route::get('dashboard/consumption/summary', 'Api\DashboardController@consumptionSummary');
-            Route::get('dashboard/consumption/by-batch', 'Api\DashboardController@consumptionByBatch');
-            Route::get('dashboard/consumption/by-material', 'Api\DashboardController@consumptionByMaterial');
-            Route::get('dashboard/consumption/returnables', 'Api\DashboardController@consumptionReturnables');
+        // Dashboard 3 - Consumption & Batch Efficiency
+        Route::get('dashboard/consumption/summary', 'Api\DashboardController@consumptionSummary');
+        Route::get('dashboard/consumption/by-batch', 'Api\DashboardController@consumptionByBatch');
+        Route::get('dashboard/consumption/by-material', 'Api\DashboardController@consumptionByMaterial');
+        Route::get('dashboard/consumption/returnables', 'Api\DashboardController@consumptionReturnables');
 
-            // Dashboard 4 - GRN & Supplier Performance
-            Route::get('dashboard/grn/summary', 'Api\DashboardController@grnSummary');
-            Route::get('dashboard/grn/by-supplier', 'Api\DashboardController@grnBySupplier');
-            Route::get('dashboard/grn/open-stuck', 'Api\DashboardController@grnOpenStuck');
-            Route::get('dashboard/grn/price-variance', 'Api\DashboardController@grnPriceVariance');
-            Route::get('dashboard/grn/list', 'Api\DashboardController@grnList');
+        // Dashboard 4 - GRN & Supplier Performance
+        Route::get('dashboard/grn/summary', 'Api\DashboardController@grnSummary');
+        Route::get('dashboard/grn/by-supplier', 'Api\DashboardController@grnBySupplier');
+        Route::get('dashboard/grn/open-stuck', 'Api\DashboardController@grnOpenStuck');
+        Route::get('dashboard/grn/price-variance', 'Api\DashboardController@grnPriceVariance');
+        Route::get('dashboard/grn/list', 'Api\DashboardController@grnList');
 
-            // Dashboard 5 - Payments & Payables
-            Route::get('dashboard/payments/summary', 'Api\DashboardController@paymentsSummary');
-            Route::get('dashboard/payments/by-supplier', 'Api\DashboardController@paymentsBySupplier');
-            Route::get('dashboard/payments/trend', 'Api\DashboardController@paymentsTrend');
-            Route::get('dashboard/payments/list', 'Api\DashboardController@paymentsList');
+        // Dashboard 5 - Payments & Payables
+        Route::get('dashboard/payments/summary', 'Api\DashboardController@paymentsSummary');
+        Route::get('dashboard/payments/by-supplier', 'Api\DashboardController@paymentsBySupplier');
+        Route::get('dashboard/payments/trend', 'Api\DashboardController@paymentsTrend');
+        Route::get('dashboard/payments/list', 'Api\DashboardController@paymentsList');
 
-            // Shared filters
-            Route::get('dashboard/filters/warehouses', 'Api\DashboardController@filtersWarehouses');
-            Route::get('dashboard/filters/suppliers', 'Api\DashboardController@filtersSuppliers');
-            Route::get('dashboard/filters/categories', 'Api\DashboardController@filtersCategories');
-            Route::get('dashboard/filters/batches', 'Api\DashboardController@filtersBatches');
-            Route::get('dashboard/filters/users', 'Api\DashboardController@filtersUsers');
+        // Shared filters
+        Route::get('dashboard/filters/warehouses', 'Api\DashboardController@filtersWarehouses');
+        Route::get('dashboard/filters/suppliers', 'Api\DashboardController@filtersSuppliers');
+        Route::get('dashboard/filters/categories', 'Api\DashboardController@filtersCategories');
+        Route::get('dashboard/filters/batches', 'Api\DashboardController@filtersBatches');
+        Route::get('dashboard/filters/users', 'Api\DashboardController@filtersUsers');
+
+        // Routing master (RouteMaster)
+        Route::post('routing/create', 'Api\RouteMasterController@createRec')->name('routing.create');
+        Route::put('routing/update/{id}', 'Api\RouteMasterController@updateRec')->name('routing.update');
+        Route::delete('routing/delete/{id}', 'Api\RouteMasterController@deleteRec')->name('routing.delete');
+        Route::get('routing/get/{id}', 'Api\RouteMasterController@getOne')->name('routing.get');
+        Route::get('routing/list', 'Api\RouteMasterController@getAll')->name('routing.list');
+
+        // Operation master (OperationMaster)
+        Route::post('operation/create', 'Api\OperationMasterController@createRec')->name('operation.create');
+        Route::put('operation/update/{id}', 'Api\OperationMasterController@updateRec')->name('operation.update');
+        Route::delete('operation/delete/{id}', 'Api\OperationMasterController@deleteRec')->name('operation.delete');
+        Route::get('operation/get/{id}', 'Api\OperationMasterController@getOne')->name('operation.get');
+        Route::get('operation/list', 'Api\OperationMasterController@getAll')->name('operation.list');
+
+        // Routing operation master (RoutingOperationMaster)
+        Route::post('routing-operation-master/create', 'Api\RoutingOperationMasterController@createRec')->name('routingOperationMaster.create');
+        Route::put('routing-operation-master/update/{id}', 'Api\RoutingOperationMasterController@updateRec')->name('routingOperationMaster.update');
+        Route::delete('routing-operation-master/delete/{id}', 'Api\RoutingOperationMasterController@deleteRec')->name('routingOperationMaster.delete');
+        Route::get('routing-operation-master/get/{id}', 'Api\RoutingOperationMasterController@getOne')->name('routingOperationMaster.get');
+        Route::get('routing-operation-master/list', 'Api\RoutingOperationMasterController@getAll')->name('routingOperationMaster.list');
     });
 });
 

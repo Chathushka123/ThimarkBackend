@@ -1,0 +1,50 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp /home/chathura-jayawardane/Documents/Programming/WithChathushka/SkillMatrix/IE-Backend/config/jwt.php /home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkBackend/config/jwt.php)",
+      "Bash(cp /home/chathura-jayawardane/Documents/Programming/WithChathushka/SkillMatrix/IE-Backend/config/refresh_token.php /home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkBackend/config/refresh_token.php)",
+      "Bash(composer dump-autoload *)",
+      "Bash(find /home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkBackend/app -iname *FpoController*)",
+      "Bash(git -C /home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkBackend log --oneline -1 -- app/Http/Controllers/Api/FpoController.php)",
+      "Bash(git -C /home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkBackend show HEAD --stat)",
+      "Bash(redis-cli ping *)",
+      "Bash(curl -s -o /dev/null -w 'HTTP %{http_code}\\\\n' http://127.0.0.1:8123/api/v1/user -H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0IiwiaWF0IjoxNzg0MjIyMDIzLCJleHAiOjE3ODQyMjI5MjMsIm5iZiI6MTc4NDIyMjAyMywianRpIjoiMXBqQ1RxQ1dPaXQ4TGMwVSIsInN1YiI6IjEiLCJwcnYiOiI4N2UwYWYxZWY5ZmQxNTgxMmZkZWM5NzE1M2ExNGUwYjA0NzU0NmFhIn0.XLWBvjun5pHslNsyRIQHvqjLHyzsSK_k6Gh8gpnj5-U')",
+      "Bash(curl -s http://127.0.0.1:8123/api/v1/user)",
+      "Bash(curl -s http://127.0.0.1:8123/api/v1/user -H \"Authorization: Bearer garbage.garbage.garbage\")",
+      "Bash(curl -s -i -b 'refresh_token=eyJpdiI6Ik1Bbnk3L25iV080Y0dBNnNrS2N1R0E9PSIsInZhbHVlIjoiaGFVdzRsNTBGSzlISG13eUpzMDQ1clBNaEZLeW9aR1dtMC9xYmovazhkV3VWYnVGdkw4bXZQVjdQa2VwSUNrT3dXdEx3Rk92d3hTYzQxaFA2WFB3R01QcVZVYUh1d3NVSkp3MzNDVWF4Ums9IiwibWFjIjoiZGRjZmM0YTAwZTZhNmQ1ZjkyYTM5ZDE2M2MxMmZiMzA0OTU1MDc3OTQyNDhiYTJlMmYxYWE3MDdhNzg0ZTVmNCIsInRhZyI6IiJ9; csrf_refresh_token=abc123' -H 'X-CSRF-TOKEN: abc123' http://127.0.0.1:8123/api/v1/refreshToken -X POST)",
+      "Bash(php vendor/bin/phpunit --filter TmpJwtRefreshFlowTest tests/Feature/TmpJwtRefreshFlowTest.php)",
+      "Bash(find /home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkBackend/database/migrations -iname *create_users_table*)",
+      "Bash(curl -s -i -b 'refresh_token=eyJpdiI6IjRvYUxZem90Mkw2OG41M1NwS1BZbEE9PSIsInZhbHVlIjoiMGtIV3crVzNBNTZOb3Z1aERtZTFoS2kvMjNuWWYzNjMyTFVKRit2K2RsTGZidkxha00rbW94K3ozQU92Tkl2NnJISElhK05QaGJkYmpyMHlvQVNadkg0cnVrNGxwNk40L0ZjY1lncnJGQzVqeWQ4RE93NWc1eHNjRnhKK0NPWnd0SGRzTCtPQ0NHWG1mZ2hBV0RGYitnPT0iLCJtYWMiOiI5YmM0ZjZiNTUxZTY0ZmY1NDhhZTcyNzM1NzEzMzU4MDY2YTg2MTZiZGM5MTZlZWQ5YjU3ODc4MzE2Zjk3YTBmIiwidGFnIjoiIn0%3D; csrf_refresh_token=abc123' -H 'X-CSRF-TOKEN: abc123' http://127.0.0.1:8123/api/v1/refreshToken -X POST)",
+      "Bash(grep -n 'protected $hidden' -A 5 /home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkBackend/app/User.php)",
+      "Bash(node --check /home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/components/theme/Theme.js)",
+      "Bash(echo \"exit code: $?\")",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://127.0.0.1:3123/)",
+      "Bash(kill 19802)",
+      "Bash(ps -p 11077 -o pid,lstart,cmd)",
+      "Bash(grep -v '^$')",
+      "Bash(php -l app/Http/Repositories/ShiftRepository.php)",
+      "Bash(php -l app/Http/Controllers/Api/SearchController.php)",
+      "Bash(xargs -I{} sh -c 'echo ==={}===; cat {}')",
+      "Bash(awk '-F|' '{print $2}' /tmp/claude-1000/-home-chathura-jayawardane-Documents-Programming-WithChathushka-Thimark-ThimarkBackend/7d7f16a6-e8a7-4b93-bd41-3673016c55f8/scratchpad/classmap.txt)",
+      "Bash(awk '$1>1')",
+      "Bash(awk '$1>0' /tmp/claude-1000/-home-chathura-jayawardane-Documents-Programming-WithChathushka-Thimark-ThimarkBackend/7d7f16a6-e8a7-4b93-bd41-3673016c55f8/scratchpad/counts.txt)",
+      "Bash(awk '$1>0 {print $2}' /tmp/claude-1000/-home-chathura-jayawardane-Documents-Programming-WithChathushka-Thimark-ThimarkBackend/7d7f16a6-e8a7-4b93-bd41-3673016c55f8/scratchpad/counts.txt)",
+      "Bash(awk '$1==0' /tmp/claude-1000/-home-chathura-jayawardane-Documents-Programming-WithChathushka-Thimark-ThimarkBackend/7d7f16a6-e8a7-4b93-bd41-3673016c55f8/scratchpad/counts.txt)",
+      "Bash(python3 /tmp/claude-1000/-home-chathura-jayawardane-Documents-Programming-WithChathushka-Thimark-ThimarkBackend/7d7f16a6-e8a7-4b93-bd41-3673016c55f8/scratchpad/analyze.py)",
+      "Bash(awk '/^=== DailyTeamSlotTargetResource \\\\\\(app\\\\/Http\\\\/Resources\\\\/DailyTeamSlotTargetResource.php\\\\\\)/{flag=1} flag{print} /^=== .* count=/{if\\(flag && $0 !~ /DailyTeamSlotTargetResource.php\\\\\\)/\\){exit}}' /tmp/claude-1000/-home-chathura-jayawardane-Documents-Programming-WithChathushka-Thimark-ThimarkBackend/7d7f16a6-e8a7-4b93-bd41-3673016c55f8/scratchpad/usage_raw.txt)",
+      "Bash(python3 /tmp/claude-1000/-home-chathura-jayawardane-Documents-Programming-WithChathushka-Thimark-ThimarkBackend/7d7f16a6-e8a7-4b93-bd41-3673016c55f8/scratchpad/analyze2.py)",
+      "Bash(sed -n '/=== USED \\(real\\) list/,$p' /tmp/claude-1000/-home-chathura-jayawardane-Documents-Programming-WithChathushka-Thimark-ThimarkBackend/7d7f16a6-e8a7-4b93-bd41-3673016c55f8/scratchpad/analyze_out2.txt)",
+      "Bash(python3 /tmp/claude-1000/-home-chathura-jayawardane-Documents-Programming-WithChathushka-Thimark-ThimarkBackend/7d7f16a6-e8a7-4b93-bd41-3673016c55f8/scratchpad/reachability.py)",
+      "Bash(python3 -c ' *)",
+      "Bash(git rm *)",
+      "Bash(echo \"route:list exit: $?\")",
+      "Bash(xargs -0 -n1 php -l)",
+      "Bash(php -r ' *)"
+    ],
+    "additionalDirectories": [
+      "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/utils",
+      "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/api",
+      "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/components/theme"
+    ]
+  }
+}

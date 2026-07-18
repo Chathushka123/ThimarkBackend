@@ -6,7 +6,6 @@ use Google\Client as GoogleClient;
 use Google\Service\Drive as GoogleDrive;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
-use Laravel\Passport\Passport;
 use League\Flysystem\Filesystem;
 use Masbug\Flysystem\GoogleDriveAdapter;
 use Illuminate\Support\ServiceProvider;
@@ -21,7 +20,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        Passport::ignoreRoutes();
+        //
     }
 
     /**

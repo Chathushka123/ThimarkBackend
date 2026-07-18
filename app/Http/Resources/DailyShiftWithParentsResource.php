@@ -4,7 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class TeamWithParentsResource extends JsonResource
+class DailyShiftWithParentsResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -16,8 +16,10 @@ class TeamWithParentsResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'team_code' => $this->team_code,
-            'team_name' => $this->team_name,
+            'shift_id' => $this->shift_id,
+            'shift_date' => $this->shift_date,
+            'start_date_time' => $this->start_date_time,
+            'end_date_time' => $this->end_date_time,
             'active' => $this->active,
             'created_by' => $this->created_by,
             'updated_by' => $this->updated_by,

@@ -16,7 +16,10 @@ class ScreenWithParentsResource extends JsonResource
     {
         return [
             'id' => $this->id,
-                         'screen_name' => $this-> screen_name,
-                     ];
+            'screen_code' => $this->screen_code,
+            'screen_name' => $this->screen_name,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+        ];
     }
 }

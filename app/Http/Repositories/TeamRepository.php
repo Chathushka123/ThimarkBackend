@@ -3,24 +3,26 @@
 namespace App\Http\Repositories;
 
 use Illuminate\Http\Request;
-use App\Screen;
+use App\Team;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
-use App\Http\Resources\ScreenWithParentsResource;
+use App\Http\Resources\TeamWithParentsResource;
 use Illuminate\Validation\Rule;
 use Exception;
+use Illuminate\Support\Str;
 
-use App\Http\Validators\ScreenCreateValidator;
-use App\Http\Validators\ScreenUpdateValidator;
+use App\Http\Validators\TeamCreateValidator;
+use App\Http\Validators\TeamUpdateValidator;
+use Illuminate\Support\Facades\Log;
 
-class ScreenRepository
+class TeamRepository
 {
-  public function show(Screen $screen)
+  public function show(Team $team)
   {
     return response()->json(
       [
         'status' => 'success',
-        'data' => new ScreenWithParentsResource($screen),
+        'data' => new TeamWithParentsResource($team),
       ],
       200
     );
@@ -30,13 +32,14 @@ class ScreenRepository
   {
     $validator = Validator::make(
       $rec,
-      ScreenCreateValidator::getCreateRules()
+      TeamCreateValidator::getCreateRules()
     );
     if ($validator->fails()) {
-      throw new Exception($validator->errors());
+      Utilities::extractError($validator);
     }
+    $rec['team_code'] = Str::upper($rec['team_code']);
     try {
-      $model = Screen::create($rec);
+      $model = Team::create($rec);
     } catch (Exception $e) {
       throw new \App\Exceptions\GeneralException($e->getMessage());
     }
@@ -45,8 +48,8 @@ class ScreenRepository
 
   public static function updateRec($model_id, array $rec)
   {
-
-    $model = Screen::findOrFail($model_id);
+    $model = Team::findOrFail($model_id);
+    Utilities::validateCode($model->team_code, $rec['team_code'], "Team Code");
 
     if (!$model->updated_at->eq(\Carbon\Carbon::parse($rec['updated_at']))) {
       $entity = (new \ReflectionClass($model))->getShortName();
@@ -55,10 +58,10 @@ class ScreenRepository
     Utilities::hydrate($model, $rec);
     $validator = Validator::make(
       $rec,
-      ScreenUpdateValidator::getUpdateRules($model_id)
+      TeamUpdateValidator::getUpdateRules($model_id)
     );
     if ($validator->fails()) {
-      throw new Exception($validator->errors());
+      throw new \App\Exceptions\GeneralException($validator->errors());
     }
     try {
       $model->update($rec);
@@ -101,6 +104,6 @@ class ScreenRepository
 
   public static function deleteRecs(array $recs)
   {
-    Screen::destroy($recs);
+    Team::destroy($recs);
   }
 }

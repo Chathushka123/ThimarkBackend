@@ -3,24 +3,26 @@
 namespace App\Http\Repositories;
 
 use Illuminate\Http\Request;
-use App\Screen;
+use App\Shift;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
-use App\Http\Resources\ScreenWithParentsResource;
+use App\Http\Resources\ShiftWithParentsResource;
 use Illuminate\Validation\Rule;
 use Exception;
+use Illuminate\Support\Str;
 
-use App\Http\Validators\ScreenCreateValidator;
-use App\Http\Validators\ScreenUpdateValidator;
+use App\Http\Validators\ShiftCreateValidator;
+use App\Http\Validators\ShiftUpdateValidator;
+use Illuminate\Support\Facades\Log;
 
-class ScreenRepository
+class ShiftRepository
 {
-  public function show(Screen $screen)
+  public function show(Shift $shift)
   {
     return response()->json(
       [
         'status' => 'success',
-        'data' => new ScreenWithParentsResource($screen),
+        'data' => new ShiftWithParentsResource($shift),
       ],
       200
     );
@@ -30,13 +32,14 @@ class ScreenRepository
   {
     $validator = Validator::make(
       $rec,
-      ScreenCreateValidator::getCreateRules()
+      ShiftCreateValidator::getCreateRules()
     );
     if ($validator->fails()) {
-      throw new Exception($validator->errors());
+      Utilities::extractError($validator);
     }
+    $rec['shift_code'] = Str::upper($rec['shift_code']);
     try {
-      $model = Screen::create($rec);
+      $model = Shift::create($rec);
     } catch (Exception $e) {
       throw new \App\Exceptions\GeneralException($e->getMessage());
     }
@@ -45,8 +48,8 @@ class ScreenRepository
 
   public static function updateRec($model_id, array $rec)
   {
-
-    $model = Screen::findOrFail($model_id);
+    $model = Shift::findOrFail($model_id);
+    Utilities::validateCode($model->shift_code, $rec['shift_code'], "Shift Code");
 
     if (!$model->updated_at->eq(\Carbon\Carbon::parse($rec['updated_at']))) {
       $entity = (new \ReflectionClass($model))->getShortName();
@@ -55,10 +58,10 @@ class ScreenRepository
     Utilities::hydrate($model, $rec);
     $validator = Validator::make(
       $rec,
-      ScreenUpdateValidator::getUpdateRules($model_id)
+      ShiftUpdateValidator::getUpdateRules($model_id)
     );
     if ($validator->fails()) {
-      throw new Exception($validator->errors());
+      throw new \App\Exceptions\GeneralException($validator->errors());
     }
     try {
       $model->update($rec);
@@ -101,6 +104,6 @@ class ScreenRepository
 
   public static function deleteRecs(array $recs)
   {
-    Screen::destroy($recs);
+    Shift::destroy($recs);
   }
 }

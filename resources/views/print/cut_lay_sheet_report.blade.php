@@ -15,15 +15,15 @@
 <table cellspacing="0" cellpadding="5px" border="0" width="100%" style="border-color:#333; border-collapse: collapse;table-layout: fixed ;
     width: 100% ;">
     <tr>
-      <th style="width:100%; border:1px solid black; font-size:14px">INQUBE GLOBAL (PVT) LTD.</th>
-    </tr> 
+      <th style="width:100%; border:1px solid black; font-size:14px">THIMARK (PVT) LTD.</th>
+    </tr>
     <tr>
       <th style="width:100%;  font-size:11px">CUTTING LAY SHEET</th>
-    </tr> 
+    </tr>
 </table>
 {{$fppo_no=""}}
-<?php foreach ($fppo as $rec){ 
-    
+<?php foreach ($fppo as $rec){
+
     $fppo_no .= $rec->fppo_no ." / ";
  } ?>
 
@@ -37,7 +37,7 @@
       {{$style_code=""}}
       {{$buyer_name=""}}
       {{$line_no=""}}
-      
+
       {{$cut_no=""}}
       {{$fabric=""}}
       {{$acc_width=""}}
@@ -49,7 +49,7 @@
       {{$inch=0}}
       {{$cutID=""}}
       <?php $value_json="" ?>
-      <?php foreach ($cut as $rec){  
+      <?php foreach ($cut as $rec){
         $soc .= $rec->wfx_soc_no . " / ";
         $fpos .= $rec->wfx_fpo_no ." / ";
         $customer_style_ref = $rec->customer_style_ref ;
@@ -68,7 +68,7 @@
         $cutID = $rec->id;
          } ?>
         <th style="width:80%; border:1px solid black; font-size:11px; text-align:left; font-weight:50">{{$soc}}</th>
-    </tr> 
+    </tr>
     <tr>
         <th style="width:20%; border:1px solid black; font-size:11px; text-align:left;">Fpo</th>
         <th style="width:80%; border:1px solid black; font-size:11px; text-align:left; font-weight:50">{{$fpos}}</th>
@@ -89,60 +89,60 @@
     <tr>
         <th style="width:20%; border:1px solid black; font-size:11px; text-align:left">Print Date</th>
         <th colspan="3" style="width:80%; border:1px solid black; font-size:11px; font-weight:50;text-align:left"><?php echo date("Y-m-d h:i:sa"); ?></th>
-    </tr> 
+    </tr>
     <tr>
         <th style="width:20%; border:1px solid black; font-size:11px;text-align:left">Customer</th>
         <th style="width:50%; border:1px solid black; font-size:11px;font-weight:50;text-align:left">{{$buyer_name}}</th>
         <th style="width:10%; border:1px solid black; font-size:11px;text-align:left">Line</th>
         <th style="width:20%; border:1px solid black; font-size:11px; font-weight:50;text-align:left"></th>
-    </tr> 
+    </tr>
     <tr>
         <th style="width:20%; border:1px solid black; font-size:11px; text-align:left">FPPO</th>
         <th style="width:50%; border:1px solid black; font-size:11px;font-weight:50;text-align:left">{{$fppo_no}}</th>
         <th style="width:10%; border:1px solid black; font-size:11px;text-align:left">Cut No</th>
         <th style="width:20%; border:1px solid black; font-size:11px; font-weight:50;text-align:left">{{$cut_no}}</th>
-    </tr> 
+    </tr>
     <tr>
         <th style="width:20%; border:1px solid black; font-size:11px; text-align:left">Fabric</th>
         <th style="width:50%; border:1px solid black; font-size:11px;font-weight:50;text-align:left">{{$fabric}}</th>
         <th style="width:10%; border:1px solid black; font-size:11px;text-align:left">Width</th>
         <th style="width:20%; border:1px solid black; font-size:11px; font-weight:50;text-align:left"></th>
-    </tr> 
+    </tr>
     <tr>
         <th style="width:20%; border:1px solid black; font-size:11px; text-align:left">GMT Color</th>
         <th style="width:50%; border:1px solid black; font-size:11px;font-weight:50;text-align:left">{{$garment_color}}</th>
         <th style="width:10%; border:1px solid black; font-size:11px;text-align:left">FAB Color</th>
         <th style="width:20%; border:1px solid black; font-size:11px; font-weight:50;text-align:left">{{$garment_color}}</th>
-    </tr> 
+    </tr>
     <tr>
         <th style="width:20%; border:1px solid black; font-size:11px; text-align:left; background_color:yellow">Part</th>
         <th colspan="3" style="width:80%; border:1px solid black; font-size:11px; background_color:yellow">Body</th>
-    </tr> 
+    </tr>
 </table>
 <?php $pcs_macker=0; ?>
 <?php $array = json_decode($value_json, true ); ?>
 <table cellspacing="0" cellpadding="5px" border="0" width="100%" style="border-color:#333; border-collapse: collapse;table-layout: fixed ;
     width: 100% ; margin-top:20px">
     <tr>
-        <?php foreach ($array  as $key=>$value){ 
-           if(intval($value) > 0){ 
+        <?php foreach ($array  as $key=>$value){
+           if(intval($value) > 0){
                $pcs_macker += intval($value);
                ?>
 
             <th style="width:10%; border:1px solid black; font-size:11px">{{$key}}</th>
         <?php }} ?>
-      
-    </tr> 
+
+    </tr>
     <tr>
-        <?php foreach ($array  as $key=>$value){ 
+        <?php foreach ($array  as $key=>$value){
            if(intval($value) > 0){ ?>
             <th style="width:10%; border:1px solid black; font-size:11px; font-weight:50;">{{$value}}</th>
         <?php }} ?>
-      
-    </tr> 
+
+    </tr>
 
 </table>
-<?php $fab_yardage =round(($max_plies*$yrds)+($inch/36)*$max_plies,4);  
+<?php $fab_yardage =round(($max_plies*$yrds)+($inch/36)*$max_plies,4);
     $yds = round($yrds+($inch/36),4);
     $str_yds="";
     if(intval($yds) < 10){
@@ -154,7 +154,7 @@
     $meter = round(($yrds+($inch/36))/1.09361,4);
 
     $consump ="";
-    foreach ($consumption as $rec){  
+    foreach ($consumption as $rec){
         $consump = $rec->avg_consumption;
     }
 
@@ -168,7 +168,7 @@
     <tr>
       <th   style="width:20%; border:1px solid black; font-size:11px; text-align:left">Marker Name</th>
       <th colspan="6"  style="width:80%; border:1px solid black; font-size:11px;font-weight:50;">{{$marker_name}}</th>
-    </tr> 
+    </tr>
     <tr>
         <th  style="width:20%; border:1px solid black; font-size:11px; text-align:left">Fab Yardage</th>
         <th colspan="6" style="width:80%; border:1px solid black; font-size:11px; font-weight:50;">{{$fab_yardage}}</th>
@@ -178,7 +178,7 @@
       <th style="width:10%; border:1px solid black; font-size:11px;">(Yards)</th>
       <th style="width:10%; border:1px solid black; font-size:11px;">(Inch)</th>
       <th colspan="4" style="width:60%; border:1px solid black; font-size:11px;"></th>
-    </tr> 
+    </tr>
 
     <tr>
       <th style="width:20%; border:1px solid black; font-size:11px"></th>
@@ -188,17 +188,17 @@
       <th  style="width:10%; border:1px solid black; font-size:11px;">YDS</th>
       <th  style="width:20%; border:1px solid black; font-size:11px; font-weight:50;">{{$meter}}</th>
       <th  style="width:10%; border:1px solid black; font-size:11px;">M</th>
-    </tr> 
+    </tr>
     <tr>
       <th style="width:20%; border:1px solid black; font-size:11px; text-align:left">Perimeter Amt</th>
       <th colspan="2" style="width:20%; border:1px solid black; font-size:11px;font-weight:50;">{{$perimeter}}</th>
       <th style="width:20%; border:1px solid black; font-size:11px;background-color:yellow">Marker Width </th>
       <th colspan="3" style="width:40%; border:1px solid black; font-size:11px;font-weight:50;background-color:yellow">{{$acc_width}}</th>
-    </tr> 
+    </tr>
     <tr>
       <th style="width:20%; border:1px solid black; font-size:11px; padding:5px,15px,15px; text-align:left">Remarks</th>
       <th colspan="6"  style="width:80%; border:1px solid black; font-size:11px;font-weight:50;padding:15px"></th>
-    </tr> 
+    </tr>
 </table>
 
 <table cellspacing="0" cellpadding="5px" border="0" width="100%" style="border-color:#333; border-collapse: collapse;table-layout: fixed ;
@@ -208,18 +208,18 @@
       <th style="width:100%;border:1px solid black;  font-size:11px">Total Yards</th>
       <th style="width:100%;border:1px solid black;  font-size:11px">(Yards) </th>
       <th style="width:100%;border:1px solid black;  font-size:11px">(Inch)</th>
-    </tr> 
+    </tr>
     <tr>
       <th style="width:100%;border:1px solid black;  font-size:14px; "><?php echo $fab_yardage ?></th>
       <th style="width:100%;border:1px solid black;  font-size:11px"><?php echo intval($fab_yardage) ?></th>
       <th style="width:100%;border:1px solid black;  font-size:11px"><?php echo(round(($fab_yardage- intval($fab_yardage))*36,4)) ?></th>
-    </tr> 
+    </tr>
     <tr>
       <th style="width:100%;border:1px solid black;  font-size:11px; text-align:left">Pcs in Marker</th>
       <th style="width:100%;border:1px solid black;  font-size:11px;font-weight:50;">{{$pcs_macker}}</th>
       <th style="width:100%;border:1px solid black;  font-size:11px">Consumption</th>
       <th style="width:100%;border:1px solid black;  font-size:11px;font-weight:50;">{{$consump}}</th>
-    </tr> 
+    </tr>
     <tr>
       <th style="width:100%;border:1px solid black;  font-size:11px; text-align:left">No of Layers</th>
       <th style="width:100%;border:1px solid black;  font-size:11px;font-weight:50;">{{$max_plies}}</th>
@@ -246,12 +246,12 @@
       <th style="width:40%; font-size:11px; text-align:left">Binding Consumption </th>
       <th style="width:50%;border:1px solid black;  font-size:11px"></th>
       <th style="width:10%; font-size:11px; text-align:left">Y ds. </th>
-    </tr> 
+    </tr>
     <tr>
       <th style="width:40%; font-size:11px; text-align:left">Total Fabrics for Binding </th>
       <th style="width:40%;border:1px solid black;  font-size:11px"></th>
-      <th style="width:20%; font-size:11px; text-align:left">Y ds. </th> 
-    </tr> 
+      <th style="width:20%; font-size:11px; text-align:left">Y ds. </th>
+    </tr>
 </table>
 
 </body>

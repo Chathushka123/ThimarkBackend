@@ -30,9 +30,12 @@ return [
     'allowed_methods' => ['*'],
     
     /*
-     * Matches the request origin. `[*]` allows all origins.
+     * Matches the request origin, but browsers reject `*` once credentials
+     * (cookies) are involved — so this must list exact frontend origin(s)
+     * now that the refresh_token cookie requires `withCredentials: true`
+     * on the frontend's requests.
      */
-    'allowed_origins' => ['*'],
+    'allowed_origins' => array_filter(explode(',', env('FRONTEND_URLS', ''))),
 
     /*
      * Matches the request origin with, similar to `Request::is()`
@@ -57,7 +60,7 @@ return [
     /*
      * Sets the Access-Control-Allow-Credentials header.
      */
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 
     
 ];

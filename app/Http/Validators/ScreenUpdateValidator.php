@@ -9,6 +9,9 @@ class ScreenUpdateValidator
 {
   public static function getUpdateRules($keyIgnore)
   {
-    return array_merge([], ScreenCommonValidator::getCommonRules());
+    return array_merge(ScreenCommonValidator::getCommonRules(), [
+      'screen_code' => ['sometimes', 'required', Rule::unique('screens', 'screen_code')->ignore($keyIgnore)],
+      'screen_name' => ['sometimes', 'required', Rule::unique('screens', 'screen_name')->ignore($keyIgnore)],
+    ]);
   }
 }

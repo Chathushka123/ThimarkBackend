@@ -4,12 +4,12 @@ namespace App;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Passport\HasApiTokens;
 use Illuminate\Support\Facades\Auth;
+use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject
 {
-    use HasApiTokens, Notifiable;
+    use Notifiable;
 
 
     /**
@@ -22,14 +22,12 @@ class User extends Authenticatable
        parent::boot();
        static::creating(function($model)
        {
-           $user = Auth::user();
-           $model->created_by_id = $user->id;
-           $model->updated_by_id = $user->id;
+           $model->created_by_id = Auth::id();
+           $model->updated_by_id = Auth::id();
        });
        static::updating(function($model)
        {
-           $user = Auth::user();
-           $model->updated_by_id = $user->id;
+           $model->updated_by_id = Auth::id();
        });
    }
     protected $fillable = [
@@ -48,6 +46,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $hidden = [
+         'password',
          'remember_token',
     ];
 
@@ -68,5 +67,15 @@ class User extends Authenticatable
     public function role()
     {
         return $this->belongsTo(Role::class);
+    }
+
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return [];
     }
 }

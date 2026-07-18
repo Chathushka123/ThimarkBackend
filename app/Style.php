@@ -12,14 +12,12 @@ class Style extends Model
        parent::boot();
        static::creating(function($model)
        {
-           $user = Auth::user();
-           $model->created_by_id = $user->id;
-           $model->updated_by_id = $user->id;
+           $model->created_by_id = Auth::id();
+           $model->updated_by_id = Auth::id();
        });
        static::updating(function($model)
        {
-           $user = Auth::user();
-           $model->updated_by_id = $user->id;
+           $model->updated_by_id = Auth::id();
        });
    }
    

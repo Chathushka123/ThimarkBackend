@@ -17,8 +17,12 @@ class ShiftWithParentsResource extends JsonResource
         return [
             'id' => $this->id,
             'shift_code' => $this->shift_code,
-            'name' => $this->name,
-            'duration' => $this->duration
+            'shift_name' => $this->shift_name,
+            'active' => $this->active,
+            'created_by' => $this->created_by,
+            'updated_by' => $this->updated_by,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at
         ];
     }
 }

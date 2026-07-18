@@ -16,9 +16,11 @@ class PermissionWithParentsResource extends JsonResource
     {
         return [
             'id' => $this->id,
-                         'user_id' => $this-> user_id,
-                          'role_id' => $this-> role_id,
-                          'grant' => $this-> grant,
-                     ];
+            'screen_id' => $this->screen_id,
+            'role_id' => $this->role_id,
+            'grant' => $this->grant,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+        ];
     }
 }

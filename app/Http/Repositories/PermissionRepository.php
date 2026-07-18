@@ -4,7 +4,6 @@ namespace App\Http\Repositories;
 
 use Illuminate\Http\Request;
 use App\Permission;
-use App\Http\Resources\PermissionResource;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\PermissionWithParentsResource;

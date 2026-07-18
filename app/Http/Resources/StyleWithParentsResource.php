@@ -19,7 +19,11 @@ class StyleWithParentsResource extends JsonResource
             'style_code' => $this->style_code,
             'description' => $this->description,
             'size_fit' => $this->size_fit,
-            'routing' => $this->routing
+            'size_fit_json' => $this->size_fit_json,
+            'routing_id' => $this->routing_id,
+            'routing' => $this->routing,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }

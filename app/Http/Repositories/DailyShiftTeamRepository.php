@@ -3,24 +3,25 @@
 namespace App\Http\Repositories;
 
 use Illuminate\Http\Request;
-use App\Screen;
+use App\DailyShiftTeam;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
-use App\Http\Resources\ScreenWithParentsResource;
+use App\Http\Resources\DailyShiftTeamWithParentsResource;
 use Illuminate\Validation\Rule;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
-use App\Http\Validators\ScreenCreateValidator;
-use App\Http\Validators\ScreenUpdateValidator;
+use App\Http\Validators\DailyShiftTeamCreateValidator;
+use App\Http\Validators\DailyShiftTeamUpdateValidator;
 
-class ScreenRepository
+class DailyShiftTeamRepository
 {
-  public function show(Screen $screen)
+  public function show(DailyShiftTeam $dailyShiftTeam)
   {
     return response()->json(
       [
         'status' => 'success',
-        'data' => new ScreenWithParentsResource($screen),
+        'data' => new DailyShiftTeamWithParentsResource($dailyShiftTeam),
       ],
       200
     );
@@ -30,13 +31,13 @@ class ScreenRepository
   {
     $validator = Validator::make(
       $rec,
-      ScreenCreateValidator::getCreateRules()
+      DailyShiftTeamCreateValidator::getCreateRules()
     );
     if ($validator->fails()) {
-      throw new Exception($validator->errors());
+      Utilities::extractError($validator);
     }
     try {
-      $model = Screen::create($rec);
+      $model = DailyShiftTeam::create($rec);
     } catch (Exception $e) {
       throw new \App\Exceptions\GeneralException($e->getMessage());
     }
@@ -45,8 +46,7 @@ class ScreenRepository
 
   public static function updateRec($model_id, array $rec)
   {
-
-    $model = Screen::findOrFail($model_id);
+    $model = DailyShiftTeam::findOrFail($model_id);
 
     if (!$model->updated_at->eq(\Carbon\Carbon::parse($rec['updated_at']))) {
       $entity = (new \ReflectionClass($model))->getShortName();
@@ -55,10 +55,10 @@ class ScreenRepository
     Utilities::hydrate($model, $rec);
     $validator = Validator::make(
       $rec,
-      ScreenUpdateValidator::getUpdateRules($model_id)
+      DailyShiftTeamUpdateValidator::getUpdateRules($model_id)
     );
     if ($validator->fails()) {
-      throw new Exception($validator->errors());
+      throw new \App\Exceptions\GeneralException($validator->errors());
     }
     try {
       $model->update($rec);
@@ -101,6 +101,6 @@ class ScreenRepository
 
   public static function deleteRecs(array $recs)
   {
-    Screen::destroy($recs);
+    DailyShiftTeam::destroy($recs);
   }
 }

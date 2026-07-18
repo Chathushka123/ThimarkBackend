@@ -16,16 +16,15 @@ class DailyShiftTeamWithParentsResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'current_date' => $this->current_date,
-            'team' => new TeamWithParentsResource($this->team),
-            'daily_shift' => new DailyShiftWithParentsResource($this->daily_shift),
+            'daily_shift_id' => $this->daily_shift_id,
+            'team_id' => $this->team_id,
             'start_date_time' => $this->start_date_time,
             'end_date_time' => $this->end_date_time,
-            'break' => $this->break,
-            'scan_frequency' => $this->scan_frequency,
-            'total_target' => $this->total_target,
-            'planned_sah' => $this->planned_sah,
-            'planned_efficient' => $this->planned_efficient
+            'active' => $this->active,
+            'created_by' => $this->created_by,
+            'updated_by' => $this->updated_by,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at
         ];
     }
 }

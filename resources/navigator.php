@@ -180,7 +180,7 @@ $navigator_json = '
        ]
     },
 
-    
+
    {
        "caption":"QC Management",
        "id":"qc-management",
@@ -252,6 +252,36 @@ $navigator_json = '
           "type": "node",
           "permitted" : 0,
           "path": "/permissions"
+        }
+      ]
+    },
+     {
+      "caption": "Shift Management",
+      "id": "shift-management",
+      "icon": "fas fa-user-tie",
+      "type": "folder",
+      "permitted" : 0,
+      "nodes": [
+        {
+          "caption": "Daily Shifts",
+          "icon": "fas fa-user-plus",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/dailyShift"
+        },
+        {
+          "caption": "Teams",
+          "icon": "fas fa-user-plus",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/team"
+        },
+        {
+          "caption": "Shifts",
+          "icon": "fas fa-user-plus",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/shift"
         }
       ]
     }

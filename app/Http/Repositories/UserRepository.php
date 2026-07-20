@@ -4,11 +4,9 @@ namespace App\Http\Repositories;
 
 use Illuminate\Http\Request;
 use App\User;
-use App\Http\Resources\UserResource;
 // use App\HashStore;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
-use App\Http\Resources\UserWithParentsResource;
 use Illuminate\Validation\Rule;
 use Exception;
 use Illuminate\Support\Facades\Crypt;

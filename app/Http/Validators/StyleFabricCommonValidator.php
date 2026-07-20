@@ -9,6 +9,7 @@ class StyleFabricCommonValidator
   public static function getCommonRules()
   {
     return [
+      'style_id' => ['required', 'exists:styles,id'],
       //'avg_consumption' => [
        // 'required'
       //]

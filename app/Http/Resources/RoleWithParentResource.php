@@ -16,8 +16,10 @@ class RoleWithParentsResource extends JsonResource
     {
         return [
             'id' => $this->id,
-                         'role_code' => $this-> role_code,
-                          'description' => $this-> description,
-                     ];
+            'role_code' => $this->role_code,
+            'description' => $this->description,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+        ];
     }
 }

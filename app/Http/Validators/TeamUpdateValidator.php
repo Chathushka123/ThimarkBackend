@@ -10,7 +10,7 @@ class TeamUpdateValidator
   public static function getUpdateRules($keyIgnore)
   {
     return array_merge([
-      'code' => ['required', Rule::unique('teams')->ignore($keyIgnore)]
+      'team_code' => ['sometimes', 'required', Rule::unique('teams')->ignore($keyIgnore)]
     ], TeamCommonValidator::getCommonRules());
   }
 }

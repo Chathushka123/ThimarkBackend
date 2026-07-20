@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "08aff596-b80e-466f-869d-f2d972b1790d",
-		"name": "inqube-laravel",
+		"name": "thimark-laravel",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -4608,7 +4608,7 @@
 								{
 									"key": "payload",
 									"type": "file",
-									"src": "/F:/_SmashyERP/InqubeDataFiles/SF_OC_Reduced.xlsx"
+									"src": "/F:/_SmashyERP/ThimarkDataFiles/SF_OC_Reduced.xlsx"
 								},
 								{
 									"key": "model",
@@ -5132,12 +5132,12 @@
 		{
 			"id": "79fb478d-5b16-4b8f-8f0b-ea7874e483af",
 			"key": "BASE_ENDPOINT",
-			"value": "http://localhost:8080/inqube-laravel/public/api"
+			"value": "http://localhost:8080/thimark-laravel/public/api"
 		},
 		{
 			"id": "c430daf5-0307-4880-9546-9771aaa5985f",
 			"key": "TARGET_DB",
-			"value": "InQubeDev"
+			"value": "Thimarkev"
 		}
 	],
 	"protocolProfileBehavior": {}

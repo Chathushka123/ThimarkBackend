@@ -7,8 +7,7 @@ class ShiftCommonValidator
   public static function getCommonRules()
   {
     return [
-      'name' => ['required'],
-      'duration' => ['required']
+      'shift_name' => ['required']
     ];
   }
 }

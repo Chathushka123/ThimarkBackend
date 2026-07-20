@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Permission;
-use App\Http\Resources\PermissionResource;
 use App\Http\Repositories\PermissionRepository;
 use App\Http\Repositories\Utilities;
 use Illuminate\Http\Request;

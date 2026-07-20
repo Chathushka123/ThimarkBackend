@@ -37,7 +37,7 @@ class SearchController extends Controller
           }
         }
 
-        $model = "App\\" . $obj;
+        $model = class_exists("App\\Models\\" . $obj) ? "App\\Models\\" . $obj : "App\\" . $obj;
         if (isset($params->select) && ($params->select != "") && ($params->select != "*")) {
           $fieldList = $params->select;
         } else {
@@ -178,7 +178,9 @@ class SearchController extends Controller
       }
     }
 
-    $rootClass = "App\\" . array_key_first($searchJson);
+    $rootClass = class_exists("App\\Models\\" . array_key_first($searchJson))
+      ? "App\\Models\\" . array_key_first($searchJson)
+      : "App\\" . array_key_first($searchJson);
     $query = '';
     if (empty($with)) {
       $query = $rootClass::whereIn('id', $this->_getModelIds($searchJson));

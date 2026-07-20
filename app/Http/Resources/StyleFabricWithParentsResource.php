@@ -12,7 +12,10 @@ class StyleFabricWithParentsResource extends JsonResource
         return [
             'id' => $this->id,
             'fabric' => $this->fabric,
-            'style' => new StyleWithParentsResource($this->style)        
+            'style_id' => $this->style_id,
+            'style' => new StyleWithParentsResource($this->style),
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }

@@ -8,6 +8,8 @@ class DailyShiftCreateValidator
 {
   public static function getCreateRules()
   {
-    return array_merge([], DailyShiftCommonValidator::getCommonRules());
+    return array_merge([
+      'shift_id' => 'required|exists:shifts,id'
+    ], DailyShiftCommonValidator::getCommonRules());
   }
 }

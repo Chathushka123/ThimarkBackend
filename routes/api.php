@@ -18,10 +18,11 @@ Route::prefix('v1')->group(function () {
 
     Route::post('login', 'Api\AuthController@login')->name('login');
     Route::post('register', 'Api\AuthController@register')->name('register');
+    Route::post('refreshToken', 'Api\AuthController@refreshToken')->middleware('csrf.cookie')->name('refreshToken');
     Route::get('fpos/{fpo}/generateLayout', 'Api\FpoController@generateLayout')->name('fpos.generateLayout');
 
     // Route::get('search', 'Api\SearchController@search')->name('search.index');
-    Route::group(['middleware' => 'auth:api'], function () {
+    Route::group(['middleware' => 'jwt.verify'], function () {
         Route::post('novelSearch', 'Api\SearchController@novelSearch')->name('novelSearch');
         Route::post('getFunctionalPermission', 'Api\SearchController@getFunctionalPermission')->name('getFunctionalPermission');
 
@@ -32,7 +33,7 @@ Route::prefix('v1')->group(function () {
 
         // Auth
         Route::get('user', 'Api\AuthController@user')->name('user.get');
-        Route::post('logout', 'Api\AuthController@logout')->name('logout');
+        Route::post('logout', 'Api\AuthController@logout')->middleware('csrf.cookie')->name('logout');
         Route::get('user/stickers/{id}', 'Api\UserController@printStickers')->name('user.printStickers');
 
 

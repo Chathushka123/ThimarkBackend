@@ -2,37 +2,36 @@
 
 namespace App\Models;
 
+use App\StockMaterial;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * BundleTicketSecondary
+ * Bundle
  *
  * @property int $id
- * @property int $bundle_ticket_id
- * @property int $scan_qty
- * @property int $daily_shift_team_id
+ * @property int $work_order_id
+ * @property int $stock_material_id
  * @property bool $active
  * @property int|null $created_by
  * @property int|null $updated_by
  */
-class BundleTicketSecondary extends Model
+class Bundle extends Model
 {
     use HasFactory;
 
     /**
      * @var string
      */
-    protected $table = 'bundle_ticket_secondaries';
+    protected $table = 'bundles';
 
     /**
      * @var array<int, string>
      */
     protected $fillable = [
-        'bundle_ticket_id',
-        'scan_qty',
-        'daily_shift_team_id',
+        'work_order_id',
+        'stock_material_id',
         'active',
         'created_by',
         'updated_by',
@@ -52,29 +51,37 @@ class BundleTicketSecondary extends Model
     {
         parent::boot();
 
-        static::creating(function (BundleTicketSecondary $model) {
+        static::creating(function (Bundle $model) {
             $model->created_by = Auth::id();
             $model->updated_by = Auth::id();
         });
 
-        static::updating(function (BundleTicketSecondary $model) {
+        static::updating(function (Bundle $model) {
             $model->updated_by = Auth::id();
         });
     }
 
     /**
-     * The bundle ticket this scan belongs to.
+     * The work order this bundle belongs to.
      */
-    public function bundleTicket()
+    public function workOrder()
     {
-        return $this->belongsTo(BundleTicket::class, 'bundle_ticket_id');
+        return $this->belongsTo(WorkOrder::class, 'work_order_id');
     }
 
     /**
-     * The daily shift team that performed this scan.
+     * The stock material this bundle references.
      */
-    public function dailyShiftTeam()
+    public function stockMaterial()
     {
-        return $this->belongsTo(DailyShiftTeam::class, 'daily_shift_team_id');
+        return $this->belongsTo(StockMaterial::class, 'stock_material_id');
+    }
+
+    /**
+     * The line-item details (qty/size breakdown) for this bundle.
+     */
+    public function bundleDetails()
+    {
+        return $this->hasMany(BundleDetail::class, 'bundle_id');
     }
 }

@@ -224,7 +224,52 @@ $navigator_json = '
          }
       ]
    },
-
+   {
+      "caption": "Scanning",
+      "id": "scanning",
+      "icon": "fas fa-qrcode",
+      "type": "folder",
+      "permitted" : 0,
+      "nodes": [
+        {
+          "caption": "Scanning",
+          "icon": "fas fa-barcode",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/productionWIPScanning"
+        }
+      ]
+    },
+    {
+      "caption": "Shift Management",
+      "id": "shift-management",
+      "icon": "fas fa-business-time",
+      "type": "folder",
+      "permitted" : 0,
+      "nodes": [
+        {
+          "caption": "Daily Shifts",
+          "icon": "fas fa-calendar-day",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/dailyShift"
+        },
+        {
+          "caption": "Teams",
+          "icon": "fas fa-users",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/team"
+        },
+        {
+          "caption": "Shifts",
+          "icon": "fas fa-clock",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/shift"
+        }
+      ]
+    },
     {
       "caption": "User Management",
       "id": "user-management",
@@ -254,36 +299,7 @@ $navigator_json = '
           "path": "/permissions"
         }
       ]
-    },
-     {
-      "caption": "Shift Management",
-      "id": "shift-management",
-      "icon": "fas fa-user-tie",
-      "type": "folder",
-      "permitted" : 0,
-      "nodes": [
-        {
-          "caption": "Daily Shifts",
-          "icon": "fas fa-user-plus",
-          "type": "node",
-          "permitted" : 0,
-          "path": "/dailyShift"
-        },
-        {
-          "caption": "Teams",
-          "icon": "fas fa-user-plus",
-          "type": "node",
-          "permitted" : 0,
-          "path": "/team"
-        },
-        {
-          "caption": "Shifts",
-          "icon": "fas fa-user-plus",
-          "type": "node",
-          "permitted" : 0,
-          "path": "/shift"
-        }
-      ]
     }
+
  ]
   ';

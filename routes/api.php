@@ -690,6 +690,15 @@ Route::prefix('v1')->group(function () {
         Route::delete('routing-operation-master/delete/{id}', 'Api\RoutingOperationMasterController@deleteRec')->name('routingOperationMaster.delete');
         Route::get('routing-operation-master/get/{id}', 'Api\RoutingOperationMasterController@getOne')->name('routingOperationMaster.get');
         Route::get('routing-operation-master/list', 'Api\RoutingOperationMasterController@getAll')->name('routingOperationMaster.list');
+
+        // WIP Scan (Production WIP Scanning)
+        Route::get('wipScan/myOperations', 'Api\WipScanController@myOperations')->name('wipScan.myOperations');
+        Route::get('wipScan/myTeams', 'Api\WipScanController@myTeams')->name('wipScan.myTeams');
+        Route::post('wipScan/lookup', 'Api\WipScanController@lookup')->name('wipScan.lookup');
+        Route::post('wipScan/scan', 'Api\WipScanController@scan')->name('wipScan.scan');
+        Route::delete('wipScan/secondaryScans/{id}', 'Api\WipScanController@undoSecondaryScan')->name('wipScan.undoSecondaryScan');
+        Route::delete('wipScan/rejectScans/{id}', 'Api\WipScanController@undoRejectScan')->name('wipScan.undoRejectScan');
+        Route::get('wipScan/recentScans', 'Api\WipScanController@recentScans')->name('wipScan.recentScans');
     });
 });
 

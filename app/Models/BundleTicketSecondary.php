@@ -2,36 +2,38 @@
 
 namespace App\Models;
 
-use App\StockMaterial;
+use App\DailyShiftTeam;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Bundle
+ * BundleTicketSecondary
  *
  * @property int $id
- * @property int $work_order_id
- * @property int $stock_material_id
+ * @property int $bundle_ticket_id
+ * @property int $scan_qty
+ * @property int $daily_shift_team_id
  * @property bool $active
  * @property int|null $created_by
  * @property int|null $updated_by
  */
-class Bundle extends Model
+class BundleTicketSecondary extends Model
 {
     use HasFactory;
 
     /**
      * @var string
      */
-    protected $table = 'bundles';
+    protected $table = 'bundle_ticket_secondaries';
 
     /**
      * @var array<int, string>
      */
     protected $fillable = [
-        'work_order_id',
-        'stock_material_id',
+        'bundle_ticket_id',
+        'scan_qty',
+        'daily_shift_team_id',
         'active',
         'created_by',
         'updated_by',
@@ -51,29 +53,29 @@ class Bundle extends Model
     {
         parent::boot();
 
-        static::creating(function (Bundle $model) {
+        static::creating(function (BundleTicketSecondary $model) {
             $model->created_by = Auth::id();
             $model->updated_by = Auth::id();
         });
 
-        static::updating(function (Bundle $model) {
+        static::updating(function (BundleTicketSecondary $model) {
             $model->updated_by = Auth::id();
         });
     }
 
     /**
-     * The work order this bundle belongs to.
+     * The bundle ticket this scan belongs to.
      */
-    public function workOrder()
+    public function bundleTicket()
     {
-        return $this->belongsTo(WorkOrder::class, 'work_order_id');
+        return $this->belongsTo(BundleTicket::class, 'bundle_ticket_id');
     }
 
     /**
-     * The stock material this bundle references.
+     * The daily shift team that performed this scan.
      */
-    public function stockMaterial()
+    public function dailyShiftTeam()
     {
-        return $this->belongsTo(StockMaterial::class, 'stock_material_id');
+        return $this->belongsTo(DailyShiftTeam::class, 'daily_shift_team_id');
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App;
 
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -44,7 +45,11 @@ class DailyShift extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'shift_date' => 'date',
+        // Explicit format so array/JSON serialization emits a plain "Y-m-d"
+        // date string — a bare 'date' cast would instead be serialized via
+        // serializeDate() below (same as start_date_time/end_date_time),
+        // which formats with a "H:i:s" suffix.
+        'shift_date' => 'date:Y-m-d',
         'start_date_time' => 'datetime',
         'end_date_time' => 'datetime',
         'active' => 'boolean',
@@ -81,5 +86,10 @@ class DailyShift extends Model
     public function daily_shift_teams()
     {
         return $this->hasMany(DailyShiftTeam::class, 'daily_shift_id');
+    }
+
+    protected function serializeDate(DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
     }
 }

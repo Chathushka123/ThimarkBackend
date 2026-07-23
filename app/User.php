@@ -69,6 +69,17 @@ class User extends Authenticatable implements JWTSubject
         return $this->belongsTo(Role::class);
     }
 
+    /**
+     * Operations this user is assigned to scan for on the Production WIP
+     * Scanning screen (see App\Models\UserOperation).
+     */
+    public function operations()
+    {
+        return $this->belongsToMany(OperationMaster::class, 'user_operations', 'user_id', 'operation_id')
+            ->wherePivot('active', true)
+            ->withTimestamps();
+    }
+
     public function getJWTIdentifier()
     {
         return $this->getKey();

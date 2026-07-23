@@ -39,6 +39,20 @@ $navigator_json = '
             "type":"node",
             "permitted" : 0,
             "path":"/suppliers"
+         },
+         {
+            "caption":"Operation",
+            "icon":"fas fa-cog",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/operation"
+         },
+         {
+            "caption":"Routing",
+            "icon":"fas fa-cog",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/routing"
          }
 
 

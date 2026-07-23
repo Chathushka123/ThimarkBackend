@@ -670,6 +670,13 @@ Route::prefix('v1')->group(function () {
         Route::get('dashboard/filters/batches', 'Api\DashboardController@filtersBatches');
         Route::get('dashboard/filters/users', 'Api\DashboardController@filtersUsers');
 
+        // Operation master (OperationMaster)
+        Route::post('operation/create', 'Api\OperationMasterController@createRec')->name('operation.create');
+        Route::put('operation/update/{id}', 'Api\OperationMasterController@updateRec')->name('operation.update');
+        Route::delete('operation/delete/{id}', 'Api\OperationMasterController@deleteRec')->name('operation.delete');
+        Route::get('operation/get/{id}', 'Api\OperationMasterController@getOne')->name('operation.get');
+        Route::get('operation/list', 'Api\OperationMasterController@getAll')->name('operation.list');
+
         // Routing master (RouteMaster)
         Route::post('routing/create', 'Api\RouteMasterController@createRec')->name('routing.create');
         Route::put('routing/update/{id}', 'Api\RouteMasterController@updateRec')->name('routing.update');
@@ -677,12 +684,7 @@ Route::prefix('v1')->group(function () {
         Route::get('routing/get/{id}', 'Api\RouteMasterController@getOne')->name('routing.get');
         Route::get('routing/list', 'Api\RouteMasterController@getAll')->name('routing.list');
 
-        // Operation master (OperationMaster)
-        Route::post('operation/create', 'Api\OperationMasterController@createRec')->name('operation.create');
-        Route::put('operation/update/{id}', 'Api\OperationMasterController@updateRec')->name('operation.update');
-        Route::delete('operation/delete/{id}', 'Api\OperationMasterController@deleteRec')->name('operation.delete');
-        Route::get('operation/get/{id}', 'Api\OperationMasterController@getOne')->name('operation.get');
-        Route::get('operation/list', 'Api\OperationMasterController@getAll')->name('operation.list');
+
 
         // Routing operation master (RoutingOperationMaster)
         Route::post('routing-operation-master/create', 'Api\RoutingOperationMasterController@createRec')->name('routingOperationMaster.create');

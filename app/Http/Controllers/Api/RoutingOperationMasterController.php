@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateRoutingOperationMasterRequest;
 use App\RoutingOperationMaster;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * Handles CRUD operations for the RoutingOperationMaster pivot table
@@ -119,13 +120,21 @@ class RoutingOperationMasterController extends Controller
 
     /**
      * Retrieve all active routing operation master records, ordered by sequence.
+     * Optionally filtered to a single routing via the `routing_id` query parameter.
      *
+     * @param Request $request
      * @return JsonResponse
      */
-    public function getAll(): JsonResponse
+    public function getAll(Request $request): JsonResponse
     {
         try {
-            $routingOperationMasters = RoutingOperationMaster::where('active', true)
+            $query = RoutingOperationMaster::where('active', true);
+
+            if ($request->filled('routing_id')) {
+                $query->where('routing_id', $request->input('routing_id'));
+            }
+
+            $routingOperationMasters = $query
                 ->orderBy('routing_id', 'asc')
                 ->orderBy('seq', 'asc')
                 ->get();

@@ -13,6 +13,7 @@ use App\Services\BundleLedgerService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Read-only reporting on top of the Production WIP Scanning ledger
@@ -38,8 +39,9 @@ class WipDashboardController extends Controller
 
     /**
      * Production-floor snapshot: live per-station queue/blocked state,
-     * problem alerts, and today's team scoreboard — all in one call so the
-     * screen can be built as a single page.
+     * problem alerts, today's team scoreboard, and a live main-model/model/
+     * batch breakdown of what's actually sitting on the floor right now —
+     * all in one call so the screen can be built as a single page.
      */
     public function floor(): JsonResponse
     {
@@ -48,15 +50,19 @@ class WipDashboardController extends Controller
 
             $stations = [];
             $alerts = [];
+            $batches = [];
 
             // Only bundles with something still outstanding on their route
             // are interesting here — a fully resolved bundle has nothing to
             // show on a "what's happening right now" screen.
-            Bundle::where('active', true)->orderBy('id')->chunk(50, function ($bundles) use (&$stations, &$alerts) {
-                foreach ($bundles as $bundle) {
-                    $this->accumulateFloorData($bundle, $stations, $alerts);
-                }
-            });
+            Bundle::where('active', true)
+                ->with(['workOrder.batchDetail.batch', 'workOrder.batchDetail.model.mainModel'])
+                ->orderBy('id')
+                ->chunk(50, function ($bundles) use (&$stations, &$alerts, &$batches) {
+                    foreach ($bundles as $bundle) {
+                        $this->accumulateFloorData($bundle, $stations, $alerts, $batches);
+                    }
+                });
 
             $stationList = collect($stations)->map(function ($station) {
                 $station['bundles_in_progress'] = count($station['bundles_in_progress']);
@@ -66,12 +72,20 @@ class WipDashboardController extends Controller
             // Oldest/most urgent first.
             $alertList = collect($alerts)->sortByDesc('age_minutes')->values()->take(50);
 
+            $batchList = collect($batches)->map(function ($batch) {
+                $batch['bundles_in_progress'] = count($batch['bundles_in_progress']);
+                return $batch;
+            })->values()->sortByDesc(function ($batch) {
+                return $batch['queued_qty'] + $batch['blocked_qty'] + $batch['outstanding_rework'];
+            })->values();
+
             $teamScoreboard = $this->teamScoreboard($today);
 
             return $this->success('Floor dashboard retrieved successfully.', [
                 'generated_at' => now()->toIso8601String(),
                 'stations' => $stationList,
                 'alerts' => $alertList,
+                'batch_breakdown' => $batchList,
                 'team_scoreboard' => $teamScoreboard,
             ]);
         } catch (Exception $e) {
@@ -80,11 +94,11 @@ class WipDashboardController extends Controller
     }
 
     /**
-     * Fold one bundle's ledger into the running $stations/$alerts totals.
-     * Kept separate from floor() so the per-bundle work (the only part
-     * that scales with data volume) is easy to read on its own.
+     * Fold one bundle's ledger into the running $stations/$alerts/$batches
+     * totals. Kept separate from floor() so the per-bundle work (the only
+     * part that scales with data volume) is easy to read on its own.
      */
-    private function accumulateFloorData(Bundle $bundle, array &$stations, array &$alerts): void
+    private function accumulateFloorData(Bundle $bundle, array &$stations, array &$alerts, array &$batches): void
     {
         $ledger = $this->ledger->build($bundle);
         $workOrderOperations = $ledger['workOrderOperations'];
@@ -96,6 +110,31 @@ class WipDashboardController extends Controller
         $ticketIds = $tickets->pluck('id');
         if ($ticketIds->isEmpty()) {
             return;
+        }
+
+        // This bundle's place in the main-model / model / batch hierarchy —
+        // resolved once per bundle (it doesn't vary per ticket) via
+        // bundle -> work_order -> batch_detail -> batch/model -> main_model.
+        // A batch can be split across models (batch_details), so the
+        // breakdown key is the (batch, model) pair, not the batch alone.
+        $batchDetail = optional($bundle->workOrder)->batchDetail;
+        $modelRecord = optional($batchDetail)->model;
+        $mainModelRecord = optional($modelRecord)->mainModel;
+        $batchKey = $batchDetail ? ($batchDetail->batch_id . '-' . $batchDetail->model_id) : 'unassigned';
+
+        if (!isset($batches[$batchKey])) {
+            $batches[$batchKey] = [
+                'batch_id' => optional($batchDetail)->batch_id,
+                'batch_no' => optional(optional($batchDetail)->batch)->batch_no,
+                'model_id' => optional($modelRecord)->id,
+                'model_name' => optional($modelRecord)->name,
+                'main_model_id' => optional($mainModelRecord)->id,
+                'main_model_name' => optional($mainModelRecord)->name,
+                'queued_qty' => 0,
+                'blocked_qty' => 0,
+                'outstanding_rework' => 0,
+                'bundles_in_progress' => [],
+            ];
         }
 
         // Two small extra lookups (not part of the core ledger) purely to
@@ -148,6 +187,11 @@ class WipDashboardController extends Controller
             $stations[$opId]['blocked_qty'] += max(0, $remaining - $available);
             $stations[$opId]['outstanding_rework'] += $rework;
             $stations[$opId]['bundles_in_progress'][$bundle->id] = true;
+
+            $batches[$batchKey]['queued_qty'] += $available;
+            $batches[$batchKey]['blocked_qty'] += max(0, $remaining - $available);
+            $batches[$batchKey]['outstanding_rework'] += $rework;
+            $batches[$batchKey]['bundles_in_progress'][$bundle->id] = true;
 
             if ($remaining > 0 && $available <= 0) {
                 $seq = (int) $rom->seq;
@@ -228,16 +272,31 @@ class WipDashboardController extends Controller
             ->groupBy('daily_shift_team_id')
             ->selectRaw('daily_shift_team_id, SUM(rework_qty) as qty')
             ->pluck('qty', 'daily_shift_team_id');
+        // Rework sends this team is still waiting on: total sent minus
+        // whatever the rework station has already resolved (returned good
+        // or rejected after rework) — the pending slice of the team's own
+        // rework_qty above.
+        $reworkResolved = BundleTicketReworkReturn::where('active', true)
+            ->where('created_at', '>=', $today)
+            ->groupBy('daily_shift_team_id')
+            ->selectRaw('daily_shift_team_id, SUM(return_qty + reject_qty) as qty')
+            ->pluck('qty', 'daily_shift_team_id');
 
         $teamIds = $scanned->keys()->concat($rejected->keys())->concat($reworked->keys())->unique();
         $teams = DailyShiftTeam::with('team')->whereIn('id', $teamIds)->get()->keyBy('id');
 
-        return $teamIds->map(function ($id) use ($scanned, $rejected, $reworked, $teams) {
+        return $teamIds->map(function ($id) use ($scanned, $rejected, $reworked, $reworkResolved, $teams) {
             $scannedQty = (int) ($scanned[$id] ?? 0);
             $rejectedQty = (int) ($rejected[$id] ?? 0);
             $reworkQty = (int) ($reworked[$id] ?? 0);
+            $reworkOutstanding = max(0, $reworkQty - (int) ($reworkResolved[$id] ?? 0));
             $handled = $scannedQty + $rejectedQty + $reworkQty;
             $team = $teams[$id] ?? null;
+
+            // Team WIP, in digits: what this team has scanned today, still
+            // in play — rejects are gone for good and rework still pending
+            // return hasn't rejoined good output yet, so both come off.
+            $wipQty = max(0, $scannedQty - $rejectedQty - $reworkOutstanding);
 
             return [
                 'daily_shift_team_id' => $id,
@@ -245,6 +304,7 @@ class WipDashboardController extends Controller
                 'scanned_qty' => $scannedQty,
                 'rejected_qty' => $rejectedQty,
                 'rework_qty' => $reworkQty,
+                'wip_qty' => $wipQty,
                 'reject_rate_pct' => $handled > 0 ? round($rejectedQty / $handled * 100, 1) : 0,
                 'rework_rate_pct' => $handled > 0 ? round($reworkQty / $handled * 100, 1) : 0,
             ];
@@ -312,10 +372,79 @@ class WipDashboardController extends Controller
                     'overall_rework_rate_pct' => $totalHandled > 0 ? round($totalRework / $totalHandled * 100, 1) : 0,
                 ],
                 'daily' => $daily,
+                'batch_breakdown' => $this->batchBreakdown($from),
             ]);
         } catch (Exception $e) {
             return $this->error('Failed to retrieve management dashboard.', $e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Production output for the selected window, rolled up by main model /
+     * model / batch — the "which product lines are we actually running,
+     * and how clean is each one" view a production manager or MD needs,
+     * on top of the day-by-day trend above.
+     */
+    private function batchBreakdown($from)
+    {
+        $scanned = $this->batchQtyByGroup('bundle_ticket_secondaries', 'scan_qty', $from);
+        $rejected = $this->batchQtyByGroup('bundle_ticket_rejects', 'reject_qty', $from);
+        $reworked = $this->batchQtyByGroup('bundle_ticket_reworks', 'rework_qty', $from);
+
+        $keys = $scanned->keys()->concat($rejected->keys())->concat($reworked->keys())->unique();
+
+        return $keys->map(function ($key) use ($scanned, $rejected, $reworked) {
+            $row = $scanned[$key] ?? $rejected[$key] ?? $reworked[$key];
+            $scannedQty = (int) optional($scanned[$key] ?? null)->qty;
+            $rejectedQty = (int) optional($rejected[$key] ?? null)->qty;
+            $reworkQty = (int) optional($reworked[$key] ?? null)->qty;
+            $handled = $scannedQty + $rejectedQty + $reworkQty;
+
+            return [
+                'main_model_id' => $row->main_model_id,
+                'main_model_name' => $row->main_model_name,
+                'model_id' => $row->model_id,
+                'model_name' => $row->model_name,
+                'batch_id' => $row->batch_id,
+                'batch_no' => $row->batch_no,
+                'scanned_qty' => $scannedQty,
+                'rejected_qty' => $rejectedQty,
+                'rework_qty' => $reworkQty,
+                'reject_rate_pct' => $handled > 0 ? round($rejectedQty / $handled * 100, 1) : 0,
+                'rework_rate_pct' => $handled > 0 ? round($reworkQty / $handled * 100, 1) : 0,
+            ];
+        })->sortByDesc('scanned_qty')->values();
+    }
+
+    /**
+     * SUM($qtyColumn) from a scan/reject/rework ledger table, grouped by
+     * (batch, model) via bundle -> work_order -> batch_detail — the
+     * authoritative model for a work order, since one batch can be split
+     * across several models (batch_details).
+     */
+    private function batchQtyByGroup(string $table, string $qtyColumn, $from)
+    {
+        return DB::table("$table as t")
+            ->join('bundle_tickets as bt', 'bt.id', '=', 't.bundle_ticket_id')
+            ->join('bundles as b', 'b.id', '=', 'bt.bundle_id')
+            ->join('work_orders as wo', 'wo.id', '=', 'b.work_order_id')
+            ->join('batch_details as bd', 'bd.id', '=', 'wo.batch_detail_id')
+            ->join('batches as ba', 'ba.id', '=', 'bd.batch_id')
+            ->join('models as mo', 'mo.id', '=', 'bd.model_id')
+            ->leftJoin('main_models as mm', 'mm.id', '=', 'mo.main_model_id')
+            ->where('t.active', true)
+            ->where('t.created_at', '>=', $from)
+            ->groupBy('ba.id', 'ba.batch_no', 'mo.id', 'mo.name', 'mm.id', 'mm.name')
+            ->selectRaw("
+                ba.id as batch_id, ba.batch_no,
+                mo.id as model_id, mo.name as model_name,
+                mm.id as main_model_id, mm.name as main_model_name,
+                SUM(t.$qtyColumn) as qty
+            ")
+            ->get()
+            ->keyBy(function ($row) {
+                return $row->batch_id . '-' . $row->model_id;
+            });
     }
 
     private function success(string $message, $data = null, int $status = 200): JsonResponse

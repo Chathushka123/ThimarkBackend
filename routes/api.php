@@ -694,11 +694,29 @@ Route::prefix('v1')->group(function () {
         // WIP Scan (Production WIP Scanning)
         Route::get('wipScan/myOperations', 'Api\WipScanController@myOperations')->name('wipScan.myOperations');
         Route::get('wipScan/myTeams', 'Api\WipScanController@myTeams')->name('wipScan.myTeams');
+        Route::get('wipScan/reasons/{type}', 'Api\WipScanController@reasons')->name('wipScan.reasons');
         Route::post('wipScan/lookup', 'Api\WipScanController@lookup')->name('wipScan.lookup');
         Route::post('wipScan/scan', 'Api\WipScanController@scan')->name('wipScan.scan');
+        Route::post('wipScan/sendToRework', 'Api\WipScanController@sendToRework')->name('wipScan.sendToRework');
+        Route::post('wipScan/returnFromRework', 'Api\WipScanController@returnFromRework')->name('wipScan.returnFromRework');
+        Route::get('wipScan/outstandingRework', 'Api\WipScanController@outstandingRework')->name('wipScan.outstandingRework');
+        Route::get('wipScan/bundle/{bundleId}/reconciliation', 'Api\WipScanController@reconciliation')->name('wipScan.reconciliation');
         Route::delete('wipScan/secondaryScans/{id}', 'Api\WipScanController@undoSecondaryScan')->name('wipScan.undoSecondaryScan');
         Route::delete('wipScan/rejectScans/{id}', 'Api\WipScanController@undoRejectScan')->name('wipScan.undoRejectScan');
+        Route::delete('wipScan/reworkScans/{id}', 'Api\WipScanController@undoReworkSend')->name('wipScan.undoReworkSend');
+        Route::delete('wipScan/reworkReturns/{id}', 'Api\WipScanController@undoReworkReturn')->name('wipScan.undoReworkReturn');
         Route::get('wipScan/recentScans', 'Api\WipScanController@recentScans')->name('wipScan.recentScans');
+
+        // WIP Dashboards (Production Floor + Management)
+        Route::get('wipDashboard/floor', 'Api\WipDashboardController@floor')->name('wipDashboard.floor');
+        Route::get('wipDashboard/management', 'Api\WipDashboardController@management')->name('wipDashboard.management');
+
+        // Reason master (Reason)
+        Route::post('reason/create', 'Api\ReasonController@createRec')->name('reason.create');
+        Route::put('reason/update/{id}', 'Api\ReasonController@updateRec')->name('reason.update');
+        Route::delete('reason/delete/{id}', 'Api\ReasonController@deleteRec')->name('reason.delete');
+        Route::get('reason/get/{id}', 'Api\ReasonController@getOne')->name('reason.get');
+        Route::get('reason/list', 'Api\ReasonController@getAll')->name('reason.list');
     });
 });
 

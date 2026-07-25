@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
  * @property int $id
  * @property int $bundle_ticket_id
  * @property int $scan_qty
+ * @property string $source SCAN|REWORK_RETURN
  * @property int $daily_shift_team_id
  * @property bool $active
  * @property int|null $created_by
@@ -33,6 +34,7 @@ class BundleTicketSecondary extends Model
     protected $fillable = [
         'bundle_ticket_id',
         'scan_qty',
+        'source',
         'daily_shift_team_id',
         'active',
         'created_by',

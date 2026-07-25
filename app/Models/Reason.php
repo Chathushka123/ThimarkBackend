@@ -7,32 +7,35 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Bundle
+ * Reason
+ *
+ * Master lookup table for reject/rework reasons shown as dropdowns on the
+ * Production WIP Scanning screen.
  *
  * @property int $id
- * @property int $work_order_id
- * @property int $qty
- * @property string|null $size
+ * @property string $code
+ * @property string $description
+ * @property string $type REJECT|REWORK
  * @property bool $active
  * @property int|null $created_by
  * @property int|null $updated_by
  */
-class Bundle extends Model
+class Reason extends Model
 {
     use HasFactory;
 
     /**
      * @var string
      */
-    protected $table = 'bundles';
+    protected $table = 'reasons';
 
     /**
      * @var array<int, string>
      */
     protected $fillable = [
-        'work_order_id',
-        'qty',
-        'size',
+        'code',
+        'description',
+        'type',
         'active',
         'created_by',
         'updated_by',
@@ -52,29 +55,13 @@ class Bundle extends Model
     {
         parent::boot();
 
-        static::creating(function (Bundle $model) {
+        static::creating(function (Reason $model) {
             $model->created_by = Auth::id();
             $model->updated_by = Auth::id();
         });
 
-        static::updating(function (Bundle $model) {
+        static::updating(function (Reason $model) {
             $model->updated_by = Auth::id();
         });
-    }
-
-    /**
-     * The work order this bundle belongs to.
-     */
-    public function workOrder()
-    {
-        return $this->belongsTo(WorkOrder::class, 'work_order_id');
-    }
-
-    /**
-     * The line-item details (qty/size breakdown) for this bundle.
-     */
-    public function bundleDetails()
-    {
-        return $this->hasMany(BundleDetail::class, 'bundle_id');
     }
 }

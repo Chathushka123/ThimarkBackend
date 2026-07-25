@@ -2,30 +2,38 @@
 
 namespace App\Models;
 
+use App\DailyShiftTeam;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Rework
+ * BundleTicketRework
+ *
+ * A qty pulled out of the normal scan/reject flow and sent to the rework
+ * team, against the ticket (operation x direction) it was flagged at. Until
+ * a matching BundleTicketReworkReturn resolves it, this qty counts as
+ * "outstanding" — accounted for, but not yet available to the next
+ * operation.
  *
  * @property int $id
  * @property int $bundle_ticket_id
  * @property int $rework_qty
- * @property int $return_qty
+ * @property int $reason_id
+ * @property string|null $remarks
  * @property int $daily_shift_team_id
  * @property bool $active
  * @property int|null $created_by
  * @property int|null $updated_by
  */
-class Rework extends Model
+class BundleTicketRework extends Model
 {
     use HasFactory;
 
     /**
      * @var string
      */
-    protected $table = 'reworks';
+    protected $table = 'bundle_ticket_reworks';
 
     /**
      * @var array<int, string>
@@ -33,7 +41,8 @@ class Rework extends Model
     protected $fillable = [
         'bundle_ticket_id',
         'rework_qty',
-        'return_qty',
+        'reason_id',
+        'remarks',
         'daily_shift_team_id',
         'active',
         'created_by',
@@ -54,18 +63,18 @@ class Rework extends Model
     {
         parent::boot();
 
-        static::creating(function (Rework $model) {
+        static::creating(function (BundleTicketRework $model) {
             $model->created_by = Auth::id();
             $model->updated_by = Auth::id();
         });
 
-        static::updating(function (Rework $model) {
+        static::updating(function (BundleTicketRework $model) {
             $model->updated_by = Auth::id();
         });
     }
 
     /**
-     * The bundle ticket this rework belongs to.
+     * The bundle ticket this rework was sent from.
      */
     public function bundleTicket()
     {
@@ -73,7 +82,15 @@ class Rework extends Model
     }
 
     /**
-     * The daily shift team that recorded this rework.
+     * The reason this qty was sent to rework.
+     */
+    public function reason()
+    {
+        return $this->belongsTo(Reason::class, 'reason_id');
+    }
+
+    /**
+     * The daily shift team that recorded this rework send.
      */
     public function dailyShiftTeam()
     {

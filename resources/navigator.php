@@ -237,6 +237,20 @@ $navigator_json = '
           "type": "node",
           "permitted" : 0,
           "path": "/productionWIPScanning"
+        },
+        {
+          "caption": "Floor Dashboard",
+          "icon": "fas fa-tv",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/wipFloorDashboard"
+        },
+        {
+          "caption": "Management Dashboard",
+          "icon": "fas fa-chart-line",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/wipManagementDashboard"
         }
       ]
     },

@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Auth;
  * @property int $id
  * @property int $bundle_ticket_id
  * @property int $reject_qty
- * @property string $reject_reason
+ * @property string|null $reject_reason
+ * @property int|null $reason_id
+ * @property string $source DIRECT|REWORK_REJECT
  * @property int $daily_shift_team_id
  * @property bool $active
  * @property int|null $created_by
@@ -35,6 +37,8 @@ class BundleTicketReject extends Model
         'bundle_ticket_id',
         'reject_qty',
         'reject_reason',
+        'reason_id',
+        'source',
         'daily_shift_team_id',
         'active',
         'created_by',
@@ -71,6 +75,14 @@ class BundleTicketReject extends Model
     public function bundleTicket()
     {
         return $this->belongsTo(BundleTicket::class, 'bundle_ticket_id');
+    }
+
+    /**
+     * The reason this qty was rejected.
+     */
+    public function reason()
+    {
+        return $this->belongsTo(Reason::class, 'reason_id');
     }
 
     /**

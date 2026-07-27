@@ -8,10 +8,9 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 
 /**
- * Validates input for looking up a scanned bundle's target ticket on the
- * Production WIP Scanning screen, before anything is actually recorded.
+ * Validates input for updating an existing Reason record.
  */
-class LookupBundleTicketRequest extends FormRequest
+class UpdateReasonRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -27,9 +26,15 @@ class LookupBundleTicketRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'ticket_code' => ['required', 'string', 'max:255'],
-            'operation_id' => ['required', 'integer', 'exists:operation_masters,id'],
-            'direction' => ['nullable', Rule::in(['IN', 'OUT', 'in', 'out'])],
+            'code' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('reasons', 'code')->ignore($this->route('id')),
+            ],
+            'description' => ['required', 'string', 'max:255'],
+            'type' => ['required', Rule::in(['REJECT', 'REWORK'])],
+            'active' => ['sometimes', 'boolean'],
         ];
     }
 

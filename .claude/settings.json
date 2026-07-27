@@ -94,13 +94,27 @@
       "Bash(netstat -ltnp)",
       "Bash(curl -s -o /dev/null -w \"port8000: %{http_code}\\\\n\" http://127.0.0.1:8000/api/v1/wipScan/myOperations)",
       "Bash(curl -s http://127.0.0.1:8000/api/v1/wipScan/myOperations)",
-      "Bash(curl -s -H 'Authorization: Bearer __CMDSUB_OUTPUT__' __TRACKED_VAR__/wipScan/myOperations)"
+      "Bash(curl -s -H 'Authorization: Bearer __CMDSUB_OUTPUT__' __TRACKED_VAR__/wipScan/myOperations)",
+      "Bash(node -e \"require\\('@babel/core'\\).transformFileSync\\('src/components/pages/ProductionWIPScanning/ProductionWIPScanningES.js', {presets: ['react-app']}\\)\")",
+      "Bash(grep -n 'entryCapBySeq\\\\|ticketRemaining\\\\|ticketResolved\\\\|$resolved = function\\\\|releaseOf\\\\|seqGroups' /home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkBackend/app/Http/Controllers/Api/WipScanController.php)",
+      "Bash(php -l /home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkBackend/app/Http/Controllers/Api/WipScanController.php)",
+      "Bash(xargs -I{} sh -c 'echo \"=== {} ===\"; grep -A12 \"fillable\" {}')",
+      "Bash(php -l app/Models/Bundle.php)",
+      "Bash(grep -n ''\\\\''available_directions'\\\\'' => $target\\\\['\\\\''availableDirections'\\\\''\\\\],' -A2 /home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkBackend/app/Http/Controllers/Api/WipScanController.php)",
+      "Bash(grep -n ''\\\\''operation_description'\\\\'' => $rom->operation' /home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkBackend/app/Http/Controllers/Api/WipScanController.php)",
+      "Bash(php -l app/Services/BundleLedgerService.php)",
+      "Bash(php -l app/Http/Controllers/Api/WipDashboardController.php)",
+      "Bash(php -l resources/navigator.php)",
+      "Bash(php -r 'require '\\\\''resources/navigator.php'\\\\''; $j = json_decode\\($navigator_json, true\\); echo json_last_error_msg\\(\\).PHP_EOL; echo count\\($j\\).'\\\\'' top-level nodes'\\\\''.PHP_EOL;')"
     ],
     "additionalDirectories": [
       "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/utils",
       "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/api",
       "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/components/theme",
-      "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/components/pages/ProductionWIPScanning"
+      "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/components/pages/ProductionWIPScanning",
+      "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/components/pages/ReasonsMaster",
+      "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src",
+      "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/components/pages/dashboards"
     ]
   }
 }

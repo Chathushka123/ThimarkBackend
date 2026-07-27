@@ -8,10 +8,10 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 
 /**
- * Validates input for looking up a scanned bundle's target ticket on the
- * Production WIP Scanning screen, before anything is actually recorded.
+ * Validates input for pulling a qty out of the normal scan flow and sending
+ * it to the rework team, on the Production WIP Scanning screen.
  */
-class LookupBundleTicketRequest extends FormRequest
+class SendToReworkRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -29,7 +29,11 @@ class LookupBundleTicketRequest extends FormRequest
         return [
             'ticket_code' => ['required', 'string', 'max:255'],
             'operation_id' => ['required', 'integer', 'exists:operation_masters,id'],
+            'daily_shift_team_id' => ['required', 'integer', 'exists:daily_shift_teams,id'],
             'direction' => ['nullable', Rule::in(['IN', 'OUT', 'in', 'out'])],
+            'rework_qty' => ['required', 'integer', 'min:1'],
+            'reason_id' => ['required', 'integer', 'exists:reasons,id'],
+            'remarks' => ['nullable', 'string', 'max:255'],
         ];
     }
 

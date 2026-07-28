@@ -20,6 +20,7 @@ use App\Models\WorkOrderOperation;
 use App\Services\BundleLedgerService;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -80,19 +81,20 @@ class WipScanController extends Controller
 
     /**
      * List the shift teams currently active (now falls within their
-     * start/end window). There's no user-to-team link in the schema, so
-     * every operator sees the same list and picks their own team, the same
-     * way they pick their own operation.
+     * start/end window) that this user is assigned to work as (see
+     * App\Models\UserTeam) — the same pattern as myOperations().
      */
     public function myTeams(): JsonResponse
     {
         try {
             $now = now();
+            $teamIds = Auth::user()->teams()->pluck('teams.id');
 
             $teams = DailyShiftTeam::with(['team', 'dailyShift.shift'])
                 ->where('active', true)
                 ->where('start_date_time', '<=', $now)
                 ->where('end_date_time', '>=', $now)
+                ->whereIn('team_id', $teamIds)
                 ->orderBy('start_date_time')
                 ->get()
                 ->map(function (DailyShiftTeam $dst) {
@@ -100,7 +102,7 @@ class WipScanController extends Controller
                         'id' => $dst->id,
                         'team_code' => optional($dst->team)->team_code,
                         'team_name' => optional($dst->team)->team_name,
-                        'shift_date' => optional($dst->dailyShift)->shift_date,
+                        'shift_date' => optional(optional($dst->dailyShift)->shift_date)->format('Y-m-d'),
                         'shift_code' => optional(optional($dst->dailyShift)->shift)->shift_code,
                         'shift_name' => optional(optional($dst->dailyShift)->shift)->shift_name,
                     ];
@@ -483,16 +485,31 @@ class WipScanController extends Controller
             })->keys();
 
             $withChain = 'workOrderOperation.routingOperationMaster.operation';
-            $tickets = BundleTicket::with([$withChain, 'bundle'])
+            $tickets = BundleTicket::with([
+                $withChain,
+                'bundle.workOrder.batchDetail.batch',
+                'bundle.workOrder.batchDetail.model.mainModel',
+            ])
                 ->whereIn('id', $outstandingTicketIds)
                 ->get()
                 ->map(function (BundleTicket $ticket) use ($sentTotals, $returnedTotals) {
                     $rom = optional(optional($ticket->workOrderOperation)->routingOperationMaster);
                     $outstanding = (int) ($sentTotals[$ticket->id] ?? 0) - (int) ($returnedTotals[$ticket->id] ?? 0);
 
+                    // Same main-model / model / batch hierarchy as
+                    // WipDashboardController: bundle -> work_order ->
+                    // batch_detail -> batch/model -> main_model.
+                    $batchDetail = optional(optional($ticket->bundle)->workOrder)->batchDetail;
+                    $modelRecord = optional($batchDetail)->model;
+                    $mainModelRecord = optional($modelRecord)->mainModel;
+
                     return [
                         'bundle_ticket_id' => $ticket->id,
                         'bundle_id' => $ticket->bundle_id,
+                        'work_order_id' => optional($ticket->bundle)->work_order_id,
+                        'batch_no' => optional(optional($batchDetail)->batch)->batch_no,
+                        'model_name' => optional($modelRecord)->name,
+                        'main_model_name' => optional($mainModelRecord)->name,
                         'direction' => $ticket->direction,
                         'operation_code' => optional($rom->operation)->operation_code,
                         'operation_description' => optional($rom->operation)->description,
@@ -896,14 +913,16 @@ class WipScanController extends Controller
      * The authenticated user's most recent scan + reject entries, merged and
      * pre-joined for display.
      */
-    public function recentScans(): JsonResponse
+    public function recentScans(Request $request): JsonResponse
     {
         try {
             $withChain = 'bundleTicket.workOrderOperation.routingOperationMaster.operation';
+            $teamId = $request->query('daily_shift_team_id');
 
             $secondaries = BundleTicketSecondary::with([$withChain, 'dailyShiftTeam.team'])
                 ->where('created_by', Auth::id())
                 ->where('active', true)
+                ->when($teamId, fn ($query) => $query->where('daily_shift_team_id', $teamId))
                 ->orderByDesc('created_at')
                 ->limit(20)
                 ->get()
@@ -912,6 +931,7 @@ class WipScanController extends Controller
             $rejects = BundleTicketReject::with([$withChain, 'dailyShiftTeam.team'])
                 ->where('created_by', Auth::id())
                 ->where('active', true)
+                ->when($teamId, fn ($query) => $query->where('daily_shift_team_id', $teamId))
                 ->orderByDesc('created_at')
                 ->limit(20)
                 ->get()
@@ -920,6 +940,7 @@ class WipScanController extends Controller
             $reworks = BundleTicketRework::with([$withChain, 'dailyShiftTeam.team'])
                 ->where('created_by', Auth::id())
                 ->where('active', true)
+                ->when($teamId, fn ($query) => $query->where('daily_shift_team_id', $teamId))
                 ->orderByDesc('created_at')
                 ->limit(20)
                 ->get()

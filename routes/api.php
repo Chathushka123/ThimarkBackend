@@ -35,6 +35,7 @@ Route::prefix('v1')->group(function () {
         Route::get('user', 'Api\AuthController@user')->name('user.get');
         Route::post('logout', 'Api\AuthController@logout')->middleware('csrf.cookie')->name('logout');
         Route::get('user/stickers/{id}', 'Api\UserController@printStickers')->name('user.printStickers');
+        Route::get('user/get/{id}', 'Api\UserController@getOne')->name('user.getOne');
 
 
         // Company
@@ -670,13 +671,6 @@ Route::prefix('v1')->group(function () {
         Route::get('dashboard/filters/batches', 'Api\DashboardController@filtersBatches');
         Route::get('dashboard/filters/users', 'Api\DashboardController@filtersUsers');
 
-        // Routing master (RouteMaster)
-        Route::post('routing/create', 'Api\RouteMasterController@createRec')->name('routing.create');
-        Route::put('routing/update/{id}', 'Api\RouteMasterController@updateRec')->name('routing.update');
-        Route::delete('routing/delete/{id}', 'Api\RouteMasterController@deleteRec')->name('routing.delete');
-        Route::get('routing/get/{id}', 'Api\RouteMasterController@getOne')->name('routing.get');
-        Route::get('routing/list', 'Api\RouteMasterController@getAll')->name('routing.list');
-
         // Operation master (OperationMaster)
         Route::post('operation/create', 'Api\OperationMasterController@createRec')->name('operation.create');
         Route::put('operation/update/{id}', 'Api\OperationMasterController@updateRec')->name('operation.update');
@@ -684,12 +678,28 @@ Route::prefix('v1')->group(function () {
         Route::get('operation/get/{id}', 'Api\OperationMasterController@getOne')->name('operation.get');
         Route::get('operation/list', 'Api\OperationMasterController@getAll')->name('operation.list');
 
+        // Routing master (RouteMaster)
+        Route::post('routing/create', 'Api\RouteMasterController@createRec')->name('routing.create');
+        Route::put('routing/update/{id}', 'Api\RouteMasterController@updateRec')->name('routing.update');
+        Route::delete('routing/delete/{id}', 'Api\RouteMasterController@deleteRec')->name('routing.delete');
+        Route::get('routing/get/{id}', 'Api\RouteMasterController@getOne')->name('routing.get');
+        Route::get('routing/list', 'Api\RouteMasterController@getAll')->name('routing.list');
+        Route::get('routing/getAllRoutes', 'Api\RouteMasterController@getAllRoutes')->name('routing.getAllRoutes');
+
         // Routing operation master (RoutingOperationMaster)
         Route::post('routing-operation-master/create', 'Api\RoutingOperationMasterController@createRec')->name('routingOperationMaster.create');
         Route::put('routing-operation-master/update/{id}', 'Api\RoutingOperationMasterController@updateRec')->name('routingOperationMaster.update');
         Route::delete('routing-operation-master/delete/{id}', 'Api\RoutingOperationMasterController@deleteRec')->name('routingOperationMaster.delete');
         Route::get('routing-operation-master/get/{id}', 'Api\RoutingOperationMasterController@getOne')->name('routingOperationMaster.get');
         Route::get('routing-operation-master/list', 'Api\RoutingOperationMasterController@getAll')->name('routingOperationMaster.list');
+
+        // Trolly master (TrollyMaster)
+        Route::get('trolly-master/getAll', 'Api\TrollyMasterController@getAll')->name('trollyMaster.getAll');
+        Route::get('trolly-master/getUnusedTrolly', 'Api\TrollyMasterController@getUnusedTrolly')->name('trollyMaster.getUnusedTrolly');
+        Route::get('trolly-master/getOne/{id}', 'Api\TrollyMasterController@getOne')->name('trollyMaster.getOne');
+        Route::post('trolly-master/createAndUpdate', 'Api\TrollyMasterController@createAndUpdate')->name('trollyMaster.createAndUpdate');
+        Route::post('trolly-master/delete', 'Api\TrollyMasterController@delete')->name('trollyMaster.delete');
+        Route::get('trolly-master/stickers/{ids}', 'Api\TrollyMasterController@printStickersByIds')->name('trollyMaster.stickers');
 
         // WIP Scan (Production WIP Scanning)
         Route::get('wipScan/myOperations', 'Api\WipScanController@myOperations')->name('wipScan.myOperations');
@@ -725,6 +735,20 @@ Route::prefix('v1')->group(function () {
         Route::delete('reason/delete/{id}', 'Api\ReasonController@deleteRec')->name('reason.delete');
         Route::get('reason/get/{id}', 'Api\ReasonController@getOne')->name('reason.get');
         Route::get('reason/list', 'Api\ReasonController@getAll')->name('reason.list');
+
+        // Work Order (WorkOrder) — batch-detail-driven production work order,
+        // bundle/material picking against scanned warehouse stock, and
+        // finalize/reopen for production WIP scanning.
+        Route::get('work-order/batch-details/list', 'Api\WorkOrderController@batchDetailsList')->name('workOrder.batchDetailsList');
+        Route::get('work-order/list', 'Api\WorkOrderController@getAll')->name('workOrder.list');
+        Route::get('work-order/get/{id}', 'Api\WorkOrderController@getOne')->name('workOrder.get');
+        Route::post('work-order/create', 'Api\WorkOrderController@createRec')->name('workOrder.create');
+        Route::post('work-order/bundle/create', 'Api\WorkOrderController@createBundle')->name('workOrder.bundle.create');
+        Route::put('work-order/bundle/update/{id}', 'Api\WorkOrderController@updateBundle')->name('workOrder.bundle.update');
+        Route::post('work-order/bundle-detail/create', 'Api\WorkOrderController@addBundleDetail')->name('workOrder.bundleDetail.create');
+        Route::post('work-order/bundle-detail/delete', 'Api\WorkOrderController@deleteBundleDetail')->name('workOrder.bundleDetail.delete');
+        Route::post('work-order/finalize/{id}', 'Api\WorkOrderController@finalize')->name('workOrder.finalize');
+        Route::post('work-order/reopen/{id}', 'Api\WorkOrderController@reopen')->name('workOrder.reopen');
     });
 });
 

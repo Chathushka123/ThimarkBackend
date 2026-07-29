@@ -39,6 +39,20 @@ $navigator_json = '
             "type":"node",
             "permitted" : 0,
             "path":"/suppliers"
+         },
+         {
+            "caption":"Operation",
+            "icon":"fas fa-cog",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/operation"
+         },
+         {
+            "caption":"Routing",
+            "icon":"fas fa-cog",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/routing"
          }
 
 
@@ -67,7 +81,7 @@ $navigator_json = '
     },
 
     {
-       "caption":"Inventory Management",
+       "caption":"Inventory",
        "id":"inventory-management",
        "icon":"fas fa-boxes",
        "type":"folder",
@@ -138,8 +152,43 @@ $navigator_json = '
        ]
     },
 
+   {
+       "caption":"Production",
+       "id":"production-management",
+       "icon":"fas fa-calculator",
+       "type":"folder",
+       "permitted" : 0,
+       "nodes":[
+
+         {
+            "caption":"Supermarket GRN",
+            "icon":"fas fa-file-invoice-dollar",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/supermarketGrn"
+         },
         {
-       "caption":"Cost Sheet Management",
+            "caption":"Work Order Creation",
+            "icon":"fas fa-file-invoice-dollar",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/workOrderCreation"
+         },
+         {
+            "caption":"Trolley",
+            "icon":"fas fa-file-invoice-dollar",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/trolley"
+         }
+
+
+
+       ]
+    },
+
+        {
+       "caption":"Cost Sheet",
        "id":"cost-sheet-management",
        "icon":"fas fa-calculator",
        "type":"folder",
@@ -318,6 +367,13 @@ $navigator_json = '
           "type": "node",
           "permitted" : 0,
           "path": "/permissions"
+        },
+      {
+          "caption": "Employee List",
+          "icon": "fas fa-user-lock",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/employeeList"
         }
       ]
     }

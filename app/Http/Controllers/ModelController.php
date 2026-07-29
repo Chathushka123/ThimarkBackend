@@ -26,13 +26,13 @@ class ModelController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->only(['main_model_id', 'color', 'sizes', 'name', 'active', 'model_stock_items']);
+        $data = $request->only(['main_model_id', 'route_master_id', 'color', 'sizes', 'name', 'active', 'model_stock_items']);
         return response()->json($this->repository->create($data));
     }
 
     public function update(Request $request, $id)
     {
-        $data = $request->only(['main_model_id', 'color', 'sizes', 'name', 'active', 'model_stock_items']);
+        $data = $request->only(['main_model_id', 'route_master_id', 'color', 'sizes', 'name', 'active', 'model_stock_items']);
         return response()->json($this->repository->update($id, $data));
     }
 

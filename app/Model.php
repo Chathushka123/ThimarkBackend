@@ -11,6 +11,7 @@ class Model extends EloquentModel
 
     protected $fillable = [
         'main_model_id',
+        'route_master_id',
         'color',
         'sizes',
         'name',
@@ -38,6 +39,11 @@ class Model extends EloquentModel
     public function mainModel()
     {
         return $this->belongsTo(MainModel::class, 'main_model_id');
+    }
+
+    public function routeMaster()
+    {
+        return $this->belongsTo(RouteMaster::class, 'route_master_id');
     }
 
     public function modelStockItems()

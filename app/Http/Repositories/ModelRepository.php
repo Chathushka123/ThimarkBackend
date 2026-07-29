@@ -10,6 +10,7 @@ class ModelRepository
     {
         return Model::with([
             'mainModel',
+            'routeMaster',
             'modelStockItems' => function ($query) {
                 $query->where('active', true);
             }
@@ -20,6 +21,7 @@ class ModelRepository
     {
         return Model::with([
             'mainModel',
+            'routeMaster',
             'modelStockItems' => function ($query) {
                 $query->where('active', true);
             }
@@ -36,6 +38,7 @@ class ModelRepository
         }
         return $model->load([
             'mainModel',
+            'routeMaster',
             'modelStockItems' => function ($query) {
                 $query->where('active', true);
             }
@@ -61,6 +64,7 @@ class ModelRepository
         }
         return $model->load([
             'mainModel',
+            'routeMaster',
             'modelStockItems' => function ($query) {
                 $query->where('active', true);
             }

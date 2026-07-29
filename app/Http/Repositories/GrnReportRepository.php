@@ -30,6 +30,7 @@ class GrnReportRepository
             JOIN stock_materials sm ON sm.id = wi.stock_item_id
             JOIN users u ON u.id = gd.created_by
             WHERE gd.active = 1
+              AND g.rmpono IS NOT NULL
               AND DATE(gd.created_at) >= ?
               AND DATE(gd.created_at) <= ?
             ORDER BY gd.created_at ASC",

@@ -7,9 +7,10 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 /**
- * Validates input for creating a new RoutingOperationMaster record.
+ * Validates input for updating a Bundle's size/qty while its work order is
+ * still open.
  */
-class StoreRoutingOperationMasterRequest extends FormRequest
+class UpdateWorkOrderBundleRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -25,13 +26,9 @@ class StoreRoutingOperationMasterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'routing_id' => ['required', 'integer', 'exists:route_masters,id'],
-            'operation_id' => ['required', 'integer', 'exists:operation_masters,id'],
-            'smv' => ['required', 'numeric', 'between:0,9999.9999'],
-            'seq' => ['required', 'integer'],
-            'in' => ['sometimes', 'boolean'],
-            'out' => ['sometimes', 'boolean'],
-            'active' => ['sometimes', 'boolean'],
+            'size' => ['nullable', 'string', 'max:100'],
+            'qty' => ['required', 'integer', 'min:1'],
+            'trolly_master_id' => ['nullable', 'integer', 'exists:trolly_masters,id'],
         ];
     }
 

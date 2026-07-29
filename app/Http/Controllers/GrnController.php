@@ -125,16 +125,26 @@ class GrnController extends Controller
     {
         $query = Grn::with(['creator', 'warehouse']);
 
-        if ($request->input('grn_id_search') !== '') {
+        if ($request->filled('grn_id_search')) {
             $query->where('id', 'LIKE', '%' . $request->input('grn_id_search') . '%');
         }
 
-        if ($request->input('rmpo_no_search') !== '') {
+        if ($request->filled('rmpo_no_search')) {
             $query->where('rmpono', 'LIKE', '%' . $request->input('rmpo_no_search') . '%');
         }
 
-        if ($request->input('status_search') !== '') {
+        if ($request->filled('status_search')) {
             $query->where('status', 'LIKE', '%' . $request->input('status_search') . '%');
+        }
+
+        if ($request->filled('remark_search')) {
+            $query->where('remark', 'LIKE', '%' . $request->input('remark_search') . '%');
+        }
+
+        if ($request->filled('warehouse_search')) {
+            $query->whereHas('warehouse', function ($warehouseQuery) use ($request) {
+                $warehouseQuery->where('name', 'LIKE', '%' . $request->input('warehouse_search') . '%');
+            });
         }
 
         $results = $query->orderBy('id', 'desc')->get();

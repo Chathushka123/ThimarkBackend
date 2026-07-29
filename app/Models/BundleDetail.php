@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\StockMaterial;
-use App\WarehouseLocation;
+use App\WhlItem;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Auth;
  * @property int $id
  * @property int $bundle_id
  * @property int $stock_material_id
- * @property int|null $whl_id
+ * @property int|null $whl_item_id
  * @property int $qty
  * @property string|null $size
  * @property bool $active
@@ -36,7 +36,7 @@ class BundleDetail extends Model
     protected $fillable = [
         'bundle_id',
         'stock_material_id',
-        'whl_id',
+        'whl_item_id',
         'qty',
         'size',
         'active',
@@ -85,10 +85,10 @@ class BundleDetail extends Model
     }
 
     /**
-     * The warehouse location this detail references.
+     * The warehouse item (stock at a specific location) this detail references.
      */
-    public function warehouseLocation()
+    public function whlItem()
     {
-        return $this->belongsTo(WarehouseLocation::class, 'whl_id');
+        return $this->belongsTo(WhlItem::class, 'whl_item_id');
     }
 }

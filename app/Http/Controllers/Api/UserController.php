@@ -33,4 +33,27 @@ class UserController extends Controller
         $pdf->setPaper('A4', 'portrait');
         return $pdf->stream('users_stickers_' . date('Y_m_d_H_i_s') . '.pdf');
     }
+
+    /**
+     * Look up a user's name/email by id - used by scan-a-user-id fields
+     * (e.g. the Returnable screen's Requester field) to resolve and display
+     * who the id belongs to.
+     */
+    public function getOne($id)
+    {
+        $user = User::select('id', 'name', 'email')->find($id);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User retrieved successfully.',
+            'data' => $user,
+        ]);
+    }
 }

@@ -68,4 +68,20 @@ class WorkOrder extends Model
     {
         return $this->belongsTo(BatchDetail::class, 'batch_detail_id');
     }
+
+    /**
+     * The routing operations generated for this work order.
+     */
+    public function workOrderOperations()
+    {
+        return $this->hasMany(WorkOrderOperation::class, 'work_order_id');
+    }
+
+    /**
+     * The bundles (size/qty lots) created under this work order.
+     */
+    public function bundles()
+    {
+        return $this->hasMany(Bundle::class, 'work_order_id');
+    }
 }

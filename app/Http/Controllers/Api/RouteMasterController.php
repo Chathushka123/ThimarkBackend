@@ -127,6 +127,24 @@ class RouteMasterController extends Controller
     }
 
     /**
+     * Retrieve all active routing master records, ordered by route code.
+     *
+     * @return JsonResponse
+     */
+    public function getAllRoutes(): JsonResponse
+    {
+        try {
+            $routes = RouteMaster::where('active', true)
+                ->orderBy('route_code', 'asc')
+                ->get();
+
+            return $this->success('Routings retrieved successfully.', $routes);
+        } catch (Exception $e) {
+            return $this->error('Failed to retrieve routings.', $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Build a consistent success JSON response.
      *
      * @param string $message

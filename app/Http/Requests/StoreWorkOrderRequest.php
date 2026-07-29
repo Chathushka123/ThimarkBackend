@@ -7,9 +7,9 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 /**
- * Validates input for creating a new RoutingOperationMaster record.
+ * Validates input for creating a new WorkOrder record from a batch detail.
  */
-class StoreRoutingOperationMasterRequest extends FormRequest
+class StoreWorkOrderRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -25,13 +25,7 @@ class StoreRoutingOperationMasterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'routing_id' => ['required', 'integer', 'exists:route_masters,id'],
-            'operation_id' => ['required', 'integer', 'exists:operation_masters,id'],
-            'smv' => ['required', 'numeric', 'between:0,9999.9999'],
-            'seq' => ['required', 'integer'],
-            'in' => ['sometimes', 'boolean'],
-            'out' => ['sometimes', 'boolean'],
-            'active' => ['sometimes', 'boolean'],
+            'batch_detail_id' => ['required', 'integer', 'exists:batch_details,id'],
         ];
     }
 

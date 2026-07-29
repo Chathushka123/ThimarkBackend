@@ -31,6 +31,7 @@ class Bundle extends Model
      */
     protected $fillable = [
         'work_order_id',
+        'trolly_master_id',
         'qty',
         'size',
         'active',
@@ -76,5 +77,13 @@ class Bundle extends Model
     public function bundleDetails()
     {
         return $this->hasMany(BundleDetail::class, 'bundle_id');
+    }
+
+    /**
+     * The trolley assigned to carry this bundle through production.
+     */
+    public function trollyMaster()
+    {
+        return $this->belongsTo(\App\TrollyMaster::class, 'trolly_master_id');
     }
 }

@@ -270,6 +270,13 @@ $navigator_json = '
             "type":"node",
             "permitted" : 0,
             "path":"/grnReport"
+         },
+         {
+            "caption":"Work Order Status",
+            "icon":"fas fa-circle",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/workOrderStatus"
          }
       ]
    },

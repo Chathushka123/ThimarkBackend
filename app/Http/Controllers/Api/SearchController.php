@@ -145,6 +145,8 @@ class SearchController extends Controller
   public function novelSearch(Request $request)
   {
     $with = [];
+    $orderby = false;
+    $limit = false;
     $searchJson = $request->all();
 
     $relationsAreSet = isset($searchJson[array_key_first($searchJson)]['relations']);

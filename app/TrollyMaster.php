@@ -12,6 +12,7 @@ class TrollyMaster extends Model
     protected $fillable = [
         'code',
         'name',
+        'bundle_id',
         'active',
         'used',
     ];
@@ -24,5 +25,10 @@ class TrollyMaster extends Model
     protected function serializeDate(DateTimeInterface $date)
     {
         return $date->format('Y-m-d H:i:s');
+    }
+
+    public function bundle()
+    {
+        return $this->belongsTo(\App\Models\Bundle::class, 'bundle_id');
     }
 }

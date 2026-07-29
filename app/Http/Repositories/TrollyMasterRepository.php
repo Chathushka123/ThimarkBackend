@@ -13,11 +13,6 @@ class TrollyMasterRepository
         return TrollyMaster::where('active', true)->orderBy('id', 'desc')->get();
     }
 
-    public function getUnusedTrolly()
-    {
-        return TrollyMaster::where('active', true)->where('used', false)->orderBy('id', 'desc')->get();
-    }
-
     public function getOne($id)
     {
         try {

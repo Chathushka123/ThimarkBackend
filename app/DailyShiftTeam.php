@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
  * @property int $id
  * @property int $daily_shift_id
  * @property int $team_id
+ * @property int $no_of_operators
  * @property string $start_date_time
  * @property string $end_date_time
  * @property bool $active
@@ -34,6 +35,7 @@ class DailyShiftTeam extends Model
     protected $fillable = [
         'daily_shift_id',
         'team_id',
+        'no_of_operators',
         'start_date_time',
         'end_date_time',
         'active',
@@ -45,6 +47,7 @@ class DailyShiftTeam extends Model
      * @var array<string, string>
      */
     protected $casts = [
+        'no_of_operators' => 'integer',
         'start_date_time' => 'datetime',
         'end_date_time' => 'datetime',
         'active' => 'boolean',

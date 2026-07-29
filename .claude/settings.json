@@ -105,7 +105,13 @@
       "Bash(php -l app/Services/BundleLedgerService.php)",
       "Bash(php -l app/Http/Controllers/Api/WipDashboardController.php)",
       "Bash(php -l resources/navigator.php)",
-      "Bash(php -r 'require '\\\\''resources/navigator.php'\\\\''; $j = json_decode\\($navigator_json, true\\); echo json_last_error_msg\\(\\).PHP_EOL; echo count\\($j\\).'\\\\'' top-level nodes'\\\\''.PHP_EOL;')"
+      "Bash(php -r 'require '\\\\''resources/navigator.php'\\\\''; $j = json_decode\\($navigator_json, true\\); echo json_last_error_msg\\(\\).PHP_EOL; echo count\\($j\\).'\\\\'' top-level nodes'\\\\''.PHP_EOL;')",
+      "Bash(find /home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src -type d -iname *team*)",
+      "Bash(find /home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src -iname *team* -not -path *node_modules*)",
+      "Bash(grep -v \"\\\\.map$\")",
+      "Bash(node --check src/components/pages/Team/TeamDS.js)",
+      "Bash(timeout 180 npx react-scripts build)",
+      "Bash(echo \"EXIT_CODE=$?\")"
     ],
     "additionalDirectories": [
       "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/utils",
@@ -114,7 +120,9 @@
       "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/components/pages/ProductionWIPScanning",
       "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/components/pages/ReasonsMaster",
       "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src",
-      "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/components/pages/dashboards"
+      "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/components/pages/dashboards",
+      "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/components/pages/Team",
+      "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/components/pages/DailyShift"
     ]
   }
 }

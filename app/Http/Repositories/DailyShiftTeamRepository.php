@@ -4,6 +4,7 @@ namespace App\Http\Repositories;
 
 use Illuminate\Http\Request;
 use App\DailyShiftTeam;
+use App\Team;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\DailyShiftTeamWithParentsResource;
@@ -35,6 +36,13 @@ class DailyShiftTeamRepository
     );
     if ($validator->fails()) {
       Utilities::extractError($validator);
+    }
+    if (
+      (!array_key_exists('no_of_operators', $rec) || $rec['no_of_operators'] === null || $rec['no_of_operators'] === '')
+      && !empty($rec['team_id'])
+    ) {
+      $team = Team::find($rec['team_id']);
+      $rec['no_of_operators'] = $team ? $team->no_of_operators : 0;
     }
     try {
       $model = DailyShiftTeam::create($rec);

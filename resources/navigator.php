@@ -251,6 +251,13 @@ $navigator_json = '
           "type": "node",
           "permitted" : 0,
           "path": "/wipManagementDashboard"
+        },
+        {
+          "caption": "Delete Scanned Bundles",
+          "icon": "fas fa-eraser",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/bundleTicketAudit"
         }
       ]
     },

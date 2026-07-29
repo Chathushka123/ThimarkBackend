@@ -80,6 +80,17 @@ class User extends Authenticatable implements JWTSubject
             ->withTimestamps();
     }
 
+    /**
+     * Shift teams this user is assigned to work as on the Production WIP
+     * Scanning screen (see App\Models\UserTeam).
+     */
+    public function teams()
+    {
+        return $this->belongsToMany(Team::class, 'user_teams', 'user_id', 'team_id')
+            ->wherePivot('active', true)
+            ->withTimestamps();
+    }
+
     public function getJWTIdentifier()
     {
         return $this->getKey();

@@ -18,6 +18,8 @@ class TeamWithParentsResource extends JsonResource
             'id' => $this->id,
             'team_code' => $this->team_code,
             'team_name' => $this->team_name,
+            'no_of_operators' => $this->no_of_operators,
+            'operation_id' => $this->operation_id,
             'active' => $this->active,
             'created_by' => $this->created_by,
             'updated_by' => $this->updated_by,

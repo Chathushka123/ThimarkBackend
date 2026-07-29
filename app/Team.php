@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Auth;
  * @property int $id
  * @property string $team_code
  * @property string $team_name
+ * @property int $no_of_operators
+ * @property int|null $operation_id
  * @property bool $active
  * @property int|null $created_by
  * @property int|null $updated_by
@@ -32,6 +34,8 @@ class Team extends Model
     protected $fillable = [
         'team_code',
         'team_name',
+        'no_of_operators',
+        'operation_id',
         'active',
         'created_by',
         'updated_by',
@@ -41,6 +45,7 @@ class Team extends Model
      * @var array<string, string>
      */
     protected $casts = [
+        'no_of_operators' => 'integer',
         'active' => 'boolean',
     ];
 
@@ -59,6 +64,14 @@ class Team extends Model
         static::updating(function (Team $model) {
             $model->updated_by = Auth::id();
         });
+    }
+
+    /**
+     * The operation this team performs.
+     */
+    public function operation()
+    {
+        return $this->belongsTo(OperationMaster::class, 'operation_id');
     }
 
     protected function serializeDate(DateTimeInterface $date)

@@ -53,6 +53,13 @@ $navigator_json = '
             "type":"node",
             "permitted" : 0,
             "path":"/routing"
+         },
+         {
+            "caption":"Reject Reasons",
+            "icon":"fas fa-cog",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/reasonsMaster"
          }
 
 

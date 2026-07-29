@@ -721,6 +721,11 @@ Route::prefix('v1')->group(function () {
         Route::get('wipDashboard/floor', 'Api\WipDashboardController@floor')->name('wipDashboard.floor');
         Route::get('wipDashboard/management', 'Api\WipDashboardController@management')->name('wipDashboard.management');
 
+        // Bundle Ticket Audit (admin cleanup: delete scanned bundle tickets)
+        Route::get('bundleTicketAudit/hierarchy', 'Api\BundleTicketAuditController@hierarchy')->name('bundleTicketAudit.hierarchy');
+        Route::delete('bundleTicketAudit/scanEvents/{type}/{id}', 'Api\BundleTicketAuditController@deleteScanEvent')->name('bundleTicketAudit.deleteScanEvent');
+        Route::delete('bundleTicketAudit/ticketEvents/{bundleTicketId}', 'Api\BundleTicketAuditController@deleteTicketEvents')->name('bundleTicketAudit.deleteTicketEvents');
+
         // Reason master (Reason)
         Route::post('reason/create', 'Api\ReasonController@createRec')->name('reason.create');
         Route::put('reason/update/{id}', 'Api\ReasonController@updateRec')->name('reason.update');

@@ -36,6 +36,8 @@ Route::prefix('v1')->group(function () {
         Route::post('logout', 'Api\AuthController@logout')->middleware('csrf.cookie')->name('logout');
         Route::get('user/stickers/{id}', 'Api\UserController@printStickers')->name('user.printStickers');
         Route::get('user/get/{id}', 'Api\UserController@getOne')->name('user.getOne');
+        Route::get('user/active-list', 'Api\UserController@activeList')->name('user.activeList');
+        Route::get('user/employee-stickers/{ids}', 'Api\UserController@printEmployeeStickersByIds')->name('user.printEmployeeStickersByIds');
 
 
         // Company
@@ -633,6 +635,10 @@ Route::prefix('v1')->group(function () {
         Route::get('reports/purchase-order-status', 'Api\\PurchaseOrderStatusReportController@index');
         Route::get('reports/purchase-order-status/download', 'Api\\PurchaseOrderStatusReportController@download');
 
+        // Work Order Status Report APIs
+        Route::get('reports/work-order-status', 'Api\\WorkOrderStatusReportController@index');
+        Route::get('reports/work-order-status/download', 'Api\\WorkOrderStatusReportController@download');
+
         // Dashboard 1 - Procurement Spend Overview
         Route::get('dashboard/procurement/summary', 'Api\DashboardController@procurementSummary');
         Route::get('dashboard/procurement/spend-by-supplier', 'Api\DashboardController@procurementSpendBySupplier');
@@ -695,7 +701,6 @@ Route::prefix('v1')->group(function () {
 
         // Trolly master (TrollyMaster)
         Route::get('trolly-master/getAll', 'Api\TrollyMasterController@getAll')->name('trollyMaster.getAll');
-        Route::get('trolly-master/getUnusedTrolly', 'Api\TrollyMasterController@getUnusedTrolly')->name('trollyMaster.getUnusedTrolly');
         Route::get('trolly-master/getOne/{id}', 'Api\TrollyMasterController@getOne')->name('trollyMaster.getOne');
         Route::post('trolly-master/createAndUpdate', 'Api\TrollyMasterController@createAndUpdate')->name('trollyMaster.createAndUpdate');
         Route::post('trolly-master/delete', 'Api\TrollyMasterController@delete')->name('trollyMaster.delete');

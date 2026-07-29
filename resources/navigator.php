@@ -1,7 +1,29 @@
 <?php
 $navigator_json = '
 [
-
+   {
+      "caption":"Dashboards",
+       "id":"master-data",
+       "icon":"fas fa-database",
+       "type":"folder",
+       "permitted" : 0,
+       "nodes":[
+      {
+          "caption": "Floor Dashboard",
+          "icon": "fas fa-tv",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/wipFloorDashboard"
+        },
+        {
+          "caption": "Management Dashboard",
+          "icon": "fas fa-chart-line",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/wipManagementDashboard"
+        }
+      ]
+   },
     {
        "caption":"Master Data",
        "id":"master-data",
@@ -277,6 +299,13 @@ $navigator_json = '
             "type":"node",
             "permitted" : 0,
             "path":"/grnReport"
+         },
+         {
+            "caption":"Work Order Status",
+            "icon":"fas fa-circle",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/workOrderStatus"
          }
       ]
    },
@@ -294,20 +323,7 @@ $navigator_json = '
           "permitted" : 0,
           "path": "/productionWIPScanning"
         },
-        {
-          "caption": "Floor Dashboard",
-          "icon": "fas fa-tv",
-          "type": "node",
-          "permitted" : 0,
-          "path": "/wipFloorDashboard"
-        },
-        {
-          "caption": "Management Dashboard",
-          "icon": "fas fa-chart-line",
-          "type": "node",
-          "permitted" : 0,
-          "path": "/wipManagementDashboard"
-        },
+        
         {
           "caption": "Delete Scanned Bundles",
           "icon": "fas fa-eraser",

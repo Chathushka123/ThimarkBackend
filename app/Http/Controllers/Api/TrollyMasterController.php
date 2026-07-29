@@ -22,11 +22,6 @@ class TrollyMasterController extends Controller
         return $this->repo->getAll();
     }
 
-    public function getUnusedTrolly(Request $request)
-    {
-        return $this->repo->getUnusedTrolly();
-    }
-
     public function getOne(Request $request, $id)
     {
         return $this->repo->getOne($id);

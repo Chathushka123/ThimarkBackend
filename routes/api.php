@@ -725,6 +725,9 @@ Route::prefix('v1')->group(function () {
         // WIP Dashboards (Production Floor + Management)
         Route::get('wipDashboard/floor', 'Api\WipDashboardController@floor')->name('wipDashboard.floor');
         Route::get('wipDashboard/management', 'Api\WipDashboardController@management')->name('wipDashboard.management');
+        Route::get('wipDashboard/teamBatchSummary', 'Api\WipDashboardController@teamBatchSummary')->name('wipDashboard.teamBatchSummary');
+        Route::get('wipDashboard/teamBatchSummaryRange', 'Api\WipDashboardController@teamBatchSummaryRange')->name('wipDashboard.teamBatchSummaryRange');
+        Route::get('wipDashboard/batchBundles', 'Api\WipDashboardController@batchBundles')->name('wipDashboard.batchBundles');
 
         // Bundle Ticket Audit (admin cleanup: delete scanned bundle tickets)
         Route::get('bundleTicketAudit/hierarchy', 'Api\BundleTicketAuditController@hierarchy')->name('bundleTicketAudit.hierarchy');

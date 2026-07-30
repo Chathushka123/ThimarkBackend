@@ -180,6 +180,47 @@ class WipDashboardController extends Controller
     }
 
     /**
+     * Whole-floor totals shown alongside the per-team scoreboard on both
+     * screens: total WIP (a plain sum of each team's already-computed
+     * wip_qty) and total efficiency — SUM(OUT-direction scan_qty * SMV)
+     * earned across every team, divided by SUM(elapsed minutes *
+     * operator headcount) available across every team, each team's
+     * window clamped to [$windowStart, $windowEnd] and to "now" (so a
+     * window running into today doesn't credit minutes that haven't
+     * happened yet). OUT-only earned minutes here — unlike the per-team
+     * efficiency_pct above, which sums IN+OUT — since only completed
+     * output should count as "produced" for a floor-wide figure.
+     */
+    private function floorTotals($shiftTeamIds, Carbon $windowStart, Carbon $windowEnd, $teamScoreboard): array
+    {
+        $wipQty = (int) collect($teamScoreboard)->sum('wip_qty');
+
+        $earnedOutMinutes = (float) DB::table('bundle_ticket_secondaries as bts')
+            ->join('bundle_tickets as bt', 'bt.id', '=', 'bts.bundle_ticket_id')
+            ->join('work_order_operations as woo', 'woo.id', '=', 'bt.work_order_operation_id')
+            ->where('bts.active', true)
+            ->whereIn('bts.daily_shift_team_id', $shiftTeamIds)
+            ->where('bt.direction', 'OUT')
+            ->sum(DB::raw('bts.scan_qty * woo.smv'));
+
+        $now = now();
+        $availableMinutes = 0;
+        DailyShiftTeam::whereIn('id', $shiftTeamIds)->get()->each(function ($dst) use ($windowStart, $windowEnd, $now, &$availableMinutes) {
+            $start = ($dst->start_date_time ?: $windowStart)->max($windowStart);
+            $end = ($dst->end_date_time ?: $windowEnd)->min($windowEnd)->min($now);
+            if ($end->lte($start)) {
+                return;
+            }
+            $availableMinutes += $start->diffInMinutes($end) * (int) ($dst->no_of_operators ?? 0);
+        });
+
+        return [
+            'wip_qty' => $wipQty,
+            'efficiency_pct' => $availableMinutes > 0 ? round($earnedOutMinutes / $availableMinutes * 100, 1) : 0,
+        ];
+    }
+
+    /**
      * Production-floor snapshot: live per-station queue/blocked state,
      * problem alerts, the current shift's team scoreboard, and a live
      * main-model/model/batch breakdown of what's actually sitting on the
@@ -233,6 +274,7 @@ class WipDashboardController extends Controller
                 'station_team_breakdown' => $this->stationTeamBreakdown($shiftTeamIds),
                 'hourly_trend' => $this->hourlyTrend($shiftTeamIds, $shiftStart, $shiftEnd),
                 'team_hourly_trend' => $this->teamHourlyTrend($shiftTeamIds, $shiftStart, $shiftEnd),
+                'floor_totals' => $this->floorTotals($shiftTeamIds, $shiftStart, $shiftEnd, $teamScoreboard),
             ]);
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), null, 422);
@@ -1113,6 +1155,8 @@ class WipDashboardController extends Controller
             $totalRework = array_sum(array_column($daily, 'rework_qty'));
             $totalHandled = $totalScanned + $totalRejected + $totalRework;
 
+            $teamScoreboard = $this->teamScoreboardRange($from, $to, $shiftTeamIds);
+
             return $this->success('Management dashboard retrieved successfully.', [
                 'from' => $from->toDateString(),
                 'to' => $to->toDateString(),
@@ -1125,9 +1169,10 @@ class WipDashboardController extends Controller
                 ],
                 'daily' => $daily,
                 'batch_breakdown' => $this->batchBreakdown($shiftTeamIds),
-                'team_scoreboard' => $this->teamScoreboardRange($from, $to, $shiftTeamIds),
+                'team_scoreboard' => $teamScoreboard,
                 'station_team_breakdown' => $this->stationTeamBreakdownRange($shiftTeamIds),
                 'team_daily_trend' => $teamDailyTrend,
+                'floor_totals' => $this->floorTotals($shiftTeamIds, $from, $to, $teamScoreboard),
             ]);
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), null, 422);

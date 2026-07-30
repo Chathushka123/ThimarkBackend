@@ -87,7 +87,26 @@ $navigator_json = '
 
        ]
     },
+   {
+       "caption":"Purchase Orders",
+       "id":"purchase-order-management",
+       "icon":"fas fa-calculator",
+       "type":"folder",
+       "permitted" : 0,
+       "nodes":[
 
+
+        {
+            "caption":"Purchase Orders",
+            "icon":"fas fa-file-invoice-dollar",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/purchaseOrder"
+         }
+
+
+       ]
+    },
     {
        "caption":"Order Management",
        "id":"order-management",
@@ -150,7 +169,24 @@ $navigator_json = '
 
        ]
     },
+      {
+       "caption":"QC Management",
+       "id":"qc-management",
+       "icon":"fas fa-check",
+       "type":"folder",
+       "permitted" : 0,
+       "nodes":[
 
+
+         {
+            "caption":"Grn Confirmation",
+            "icon":"fas fa-circle",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/openGrns"
+         }
+      ]
+   },
 
 
     {
@@ -215,8 +251,62 @@ $navigator_json = '
 
        ]
     },
-
+     {
+      "caption": "Scanning",
+      "id": "scanning",
+      "icon": "fas fa-qrcode",
+      "type": "folder",
+      "permitted" : 0,
+      "nodes": [
         {
+          "caption": "Scanning",
+          "icon": "fas fa-barcode",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/productionWIPScanning"
+        },
+        
+        {
+          "caption": "Delete Scanned Bundles",
+          "icon": "fas fa-eraser",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/bundleTicketAudit"
+        }
+      ]
+    },
+   {
+      "caption": "Shift Management",
+      "id": "shift-management",
+      "icon": "fas fa-business-time",
+      "type": "folder",
+      "permitted" : 0,
+      "nodes": [
+        {
+          "caption": "Daily Shifts",
+          "icon": "fas fa-calendar-day",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/dailyShift"
+        },
+        {
+          "caption": "Teams",
+          "icon": "fas fa-users",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/team"
+        },
+        {
+          "caption": "Shifts",
+          "icon": "fas fa-clock",
+          "type": "node",
+          "permitted" : 0,
+          "path": "/shift"
+        }
+      ]
+    },
+
+   {
        "caption":"Cost Sheet",
        "id":"cost-sheet-management",
        "icon":"fas fa-calculator",
@@ -237,46 +327,10 @@ $navigator_json = '
        ]
     },
 
-   {
-       "caption":"Purchase Orders",
-       "id":"purchase-order-management",
-       "icon":"fas fa-calculator",
-       "type":"folder",
-       "permitted" : 0,
-       "nodes":[
+   
 
 
-        {
-            "caption":"Purchase Orders",
-            "icon":"fas fa-file-invoice-dollar",
-            "type":"node",
-            "permitted" : 0,
-            "path":"/purchaseOrder"
-         }
 
-
-       ]
-    },
-
-
-   {
-       "caption":"QC Management",
-       "id":"qc-management",
-       "icon":"fas fa-check",
-       "type":"folder",
-       "permitted" : 0,
-       "nodes":[
-
-
-         {
-            "caption":"Grn Confirmation",
-            "icon":"fas fa-circle",
-            "type":"node",
-            "permitted" : 0,
-            "path":"/openGrns"
-         }
-      ]
-   },
 
    {
        "caption":"Reports",
@@ -309,60 +363,8 @@ $navigator_json = '
          }
       ]
    },
-   {
-      "caption": "Scanning",
-      "id": "scanning",
-      "icon": "fas fa-qrcode",
-      "type": "folder",
-      "permitted" : 0,
-      "nodes": [
-        {
-          "caption": "Scanning",
-          "icon": "fas fa-barcode",
-          "type": "node",
-          "permitted" : 0,
-          "path": "/productionWIPScanning"
-        },
-        
-        {
-          "caption": "Delete Scanned Bundles",
-          "icon": "fas fa-eraser",
-          "type": "node",
-          "permitted" : 0,
-          "path": "/bundleTicketAudit"
-        }
-      ]
-    },
-    {
-      "caption": "Shift Management",
-      "id": "shift-management",
-      "icon": "fas fa-business-time",
-      "type": "folder",
-      "permitted" : 0,
-      "nodes": [
-        {
-          "caption": "Daily Shifts",
-          "icon": "fas fa-calendar-day",
-          "type": "node",
-          "permitted" : 0,
-          "path": "/dailyShift"
-        },
-        {
-          "caption": "Teams",
-          "icon": "fas fa-users",
-          "type": "node",
-          "permitted" : 0,
-          "path": "/team"
-        },
-        {
-          "caption": "Shifts",
-          "icon": "fas fa-clock",
-          "type": "node",
-          "permitted" : 0,
-          "path": "/shift"
-        }
-      ]
-    },
+  
+    
     {
       "caption": "User Management",
       "id": "user-management",

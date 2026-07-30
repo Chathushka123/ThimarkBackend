@@ -6,6 +6,7 @@ use App\BatchDetail;
 use App\Models\Bundle;
 use App\Models\BundleDetail;
 use App\Models\BundleTicket;
+use App\Models\BundleTicketReject;
 use App\Models\BundleTicketSecondary;
 use App\Models\WorkOrder;
 use App\Models\WorkOrderOperation;
@@ -22,10 +23,66 @@ class WorkOrderRepository
      */
     public function batchDetailsList()
     {
-        return BatchDetail::with(['batch', 'model.mainModel', 'model.routeMaster'])
+        $batchDetails = BatchDetail::with(['batch', 'model.mainModel', 'model.routeMaster'])
             ->where('active', true)
             ->orderByDesc('id')
             ->get();
+
+        if ($batchDetails->isEmpty()) {
+            return $batchDetails;
+        }
+
+        $this->assignAvailableQty($batchDetails);
+
+        return $batchDetails->reject(fn ($batchDetail) => $batchDetail->available_qty === 0)->values();
+    }
+
+    /**
+     * Compute and attach total_bundle_qty / total_reject_qty / available_qty
+     * onto each given batch detail (mutates in place). available_qty is how
+     * much of the batch's quantity hasn't yet been committed to a bundle
+     * across ANY of that batch detail's work orders - rejected qty is added
+     * back since it frees up room to re-pick.
+     */
+    private function assignAvailableQty($batchDetails): void
+    {
+        $batchDetailIds = $batchDetails->pluck('id')->all();
+
+        // Total qty already committed to bundles, per batch detail (across
+        // all of that batch detail's work orders).
+        $bundleQtyByBatchDetail = Bundle::query()
+            ->join('work_orders', 'work_orders.id', '=', 'bundles.work_order_id')
+            ->where('bundles.active', true)
+            ->where('work_orders.active', true)
+            ->whereIn('work_orders.batch_detail_id', $batchDetailIds)
+            ->groupBy('work_orders.batch_detail_id')
+            ->selectRaw('work_orders.batch_detail_id, SUM(bundles.qty) as total')
+            ->pluck('total', 'batch_detail_id');
+
+        // Total rejected qty across every bundle ticket of every bundle of
+        // every work order under a batch detail - rejects free up qty that
+        // can be re-picked into a new bundle.
+        $rejectQtyByBatchDetail = BundleTicketReject::query()
+            ->join('bundle_tickets', 'bundle_tickets.id', '=', 'bundle_ticket_rejects.bundle_ticket_id')
+            ->join('bundles', 'bundles.id', '=', 'bundle_tickets.bundle_id')
+            ->join('work_orders', 'work_orders.id', '=', 'bundles.work_order_id')
+            ->where('bundle_ticket_rejects.active', true)
+            ->where('bundle_tickets.active', true)
+            ->where('bundles.active', true)
+            ->where('work_orders.active', true)
+            ->whereIn('work_orders.batch_detail_id', $batchDetailIds)
+            ->groupBy('work_orders.batch_detail_id')
+            ->selectRaw('work_orders.batch_detail_id, SUM(bundle_ticket_rejects.reject_qty) as total')
+            ->pluck('total', 'batch_detail_id');
+
+        foreach ($batchDetails as $batchDetail) {
+            $totalBundleQty = (int) ($bundleQtyByBatchDetail[$batchDetail->id] ?? 0);
+            $totalRejectQty = (int) ($rejectQtyByBatchDetail[$batchDetail->id] ?? 0);
+
+            $batchDetail->total_bundle_qty = $totalBundleQty;
+            $batchDetail->total_reject_qty = $totalRejectQty;
+            $batchDetail->available_qty = $batchDetail->quantity + $totalRejectQty - $totalBundleQty;
+        }
     }
 
     public function all(?string $status = null)
@@ -61,6 +118,10 @@ class WorkOrderRepository
 
         if (!$workOrder) {
             return null;
+        }
+
+        if ($workOrder->batchDetail) {
+            $this->assignAvailableQty(collect([$workOrder->batchDetail]));
         }
 
         $workOrder->setRelation(
@@ -120,22 +181,31 @@ class WorkOrderRepository
     public function createBundle(int $workOrderId, ?string $size, int $qty, ?int $trollyMasterId): Bundle
     {
         return DB::transaction(function () use ($workOrderId, $size, $qty, $trollyMasterId) {
-            $workOrder = WorkOrder::where('active', true)->findOrFail($workOrderId);
+            $workOrder = WorkOrder::with('batchDetail')->where('active', true)->findOrFail($workOrderId);
 
             if ($workOrder->status !== 'OPEN') {
                 throw new InvalidArgumentException('Bundles can only be added while the work order is open.');
             }
 
-            if ($trollyMasterId) {
-                $this->assignTrolly($trollyMasterId);
+            if ($workOrder->batchDetail) {
+                $this->assignAvailableQty(collect([$workOrder->batchDetail]));
+                if ($qty > $workOrder->batchDetail->available_qty) {
+                    throw new InvalidArgumentException("Only {$workOrder->batchDetail->available_qty} available on the selected batch detail.");
+                }
             }
 
-            return Bundle::create([
+            $bundle = Bundle::create([
                 'work_order_id' => $workOrderId,
                 'trolly_master_id' => $trollyMasterId,
                 'size' => $size,
                 'qty' => $qty,
             ]);
+
+            if ($trollyMasterId) {
+                $this->assignTrolly($trollyMasterId, $bundle->id);
+            }
+
+            return $bundle;
         });
     }
 
@@ -147,10 +217,23 @@ class WorkOrderRepository
     public function updateBundle(int $bundleId, ?string $size, int $qty, ?int $trollyMasterId): Bundle
     {
         return DB::transaction(function () use ($bundleId, $size, $qty, $trollyMasterId) {
-            $bundle = Bundle::with('workOrder')->where('active', true)->lockForUpdate()->findOrFail($bundleId);
+            $bundle = Bundle::with('workOrder.batchDetail')->where('active', true)->lockForUpdate()->findOrFail($bundleId);
 
             if (!$bundle->workOrder || $bundle->workOrder->status !== 'OPEN') {
                 throw new InvalidArgumentException('Bundles can only be edited while the work order is open.');
+            }
+
+            $batchDetail = $bundle->workOrder->batchDetail;
+            if ($batchDetail) {
+                $this->assignAvailableQty(collect([$batchDetail]));
+                // This bundle's own current qty is already part of what
+                // available_qty treats as "committed" - add it back so
+                // editing (including increasing) up to what's truly
+                // available isn't blocked by the bundle's own allocation.
+                $maxQty = $batchDetail->available_qty + $bundle->qty;
+                if ($qty > $maxQty) {
+                    throw new InvalidArgumentException("Only {$maxQty} available on the selected batch detail.");
+                }
             }
 
             $currentTrollyMasterId = $bundle->trolly_master_id !== null ? (int) $bundle->trolly_master_id : null;
@@ -160,7 +243,7 @@ class WorkOrderRepository
                     $this->releaseTrolly($currentTrollyMasterId);
                 }
                 if ($trollyMasterId) {
-                    $this->assignTrolly($trollyMasterId);
+                    $this->assignTrolly($trollyMasterId, $bundle->id);
                 }
                 $bundle->trolly_master_id = $trollyMasterId;
             }
@@ -174,9 +257,10 @@ class WorkOrderRepository
     }
 
     /**
-     * Mark a trolley as used - throws if it's inactive or already in use.
+     * Mark a trolley as used and link it to the bundle it now carries -
+     * throws if it's inactive or already in use.
      */
-    private function assignTrolly(int $trollyMasterId): void
+    private function assignTrolly(int $trollyMasterId, int $bundleId): void
     {
         $trolly = TrollyMaster::where('active', true)->lockForUpdate()->find($trollyMasterId);
 
@@ -188,6 +272,7 @@ class WorkOrderRepository
         }
 
         $trolly->used = true;
+        $trolly->bundle_id = $bundleId;
         $trolly->save();
     }
 
@@ -200,6 +285,7 @@ class WorkOrderRepository
 
         if ($trolly) {
             $trolly->used = false;
+            $trolly->bundle_id = null;
             $trolly->save();
         }
     }

@@ -3,7 +3,7 @@ $navigator_json = '
 [
    {
       "caption":"Dashboards",
-       "id":"master-data",
+       "id":"dashboard",
        "icon":"fas fa-database",
        "type":"folder",
        "permitted" : 0,

@@ -28,6 +28,7 @@ class StoreOperationMasterRequest extends FormRequest
             'operation_code' => ['required', 'string', 'max:255', 'unique:operation_masters,operation_code'],
             'description' => ['required', 'string', 'max:255', 'unique:operation_masters,description'],
             'active' => ['sometimes', 'boolean'],
+            'is_final_operation' => ['sometimes', 'boolean'],
         ];
     }
 

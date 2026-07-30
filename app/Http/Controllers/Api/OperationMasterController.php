@@ -27,6 +27,7 @@ class OperationMasterController extends Controller
                 'operation_code' => $request->input('operation_code'),
                 'description' => $request->input('description'),
                 'active' => $request->boolean('active', true),
+                'is_final_operation' => $request->boolean('is_final_operation', false),
             ]);
 
             return $this->success('Operation created successfully.', $operationMaster, 201);
@@ -55,6 +56,7 @@ class OperationMasterController extends Controller
                 'operation_code' => $request->input('operation_code'),
                 'description' => $request->input('description'),
                 'active' => $request->boolean('active', $operationMaster->active),
+                'is_final_operation' => $request->boolean('is_final_operation', $operationMaster->is_final_operation),
             ]);
 
             return $this->success('Operation updated successfully.', $operationMaster);

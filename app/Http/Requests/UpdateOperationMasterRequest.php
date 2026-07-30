@@ -39,6 +39,7 @@ class UpdateOperationMasterRequest extends FormRequest
                 Rule::unique('operation_masters', 'description')->ignore($this->route('id')),
             ],
             'active' => ['sometimes', 'boolean'],
+            'is_final_operation' => ['sometimes', 'boolean'],
         ];
     }
 

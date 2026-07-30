@@ -18,6 +18,7 @@ use App\Models\Reason;
 use App\Models\UserOperation;
 use App\Models\WorkOrderOperation;
 use App\Services\BundleLedgerService;
+use App\TrollyMaster;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -90,7 +91,7 @@ class WipScanController extends Controller
             $now = now();
             $teamIds = Auth::user()->teams()->pluck('teams.id');
 
-            $teams = DailyShiftTeam::with(['team', 'dailyShift.shift'])
+            $teams = DailyShiftTeam::with(['team.operation', 'dailyShift.shift'])
                 ->where('active', true)
                 ->where('start_date_time', '<=', $now)
                 ->where('end_date_time', '>=', $now)
@@ -102,6 +103,10 @@ class WipScanController extends Controller
                         'id' => $dst->id,
                         'team_code' => optional($dst->team)->team_code,
                         'team_name' => optional($dst->team)->team_name,
+                        // Team is now optionally mapped to a default Operation (Team::operation_id) —
+                        // the scanning screen uses this to auto-select the matching station/team pair.
+                        'operation_id' => optional($dst->team)->operation_id,
+                        'operation_code' => optional(optional($dst->team)->operation)->operation_code,
                         'shift_date' => optional(optional($dst->dailyShift)->shift_date)->format('Y-m-d'),
                         'shift_code' => optional(optional($dst->dailyShift)->shift)->shift_code,
                         'shift_name' => optional(optional($dst->dailyShift)->shift)->shift_name,
@@ -137,6 +142,75 @@ class WipScanController extends Controller
     }
 
     /**
+     * Cross-resolve between a trolly and the bundle currently loaded on it
+     * (TrollyMaster.bundle_id), for the scanning screen's Trolly ID / Bundle
+     * ID pair — entering either one loads the other. Only ever resolves to
+     * an active trolly + active bundle pairing, since a trolly no longer
+     * assigned or a bundle taken off active production isn't a valid target
+     * to scan against.
+     */
+    public function resolveTrolley(Request $request): JsonResponse
+    {
+        $trollyCode = $request->query('trolly_code');
+        $bundleCode = $request->query('bundle_code');
+
+        if (!$trollyCode && !$bundleCode) {
+            return $this->error('Provide a trolly_code or bundle_code.', ['code' => 'MISSING_INPUT'], 422);
+        }
+
+        try {
+            if ($trollyCode) {
+                $trollyId = $this->parseNumericId($trollyCode);
+                if ($trollyId === null) {
+                    return $this->error('Unrecognised trolly code.', ['code' => 'UNKNOWN_TROLLY'], 422);
+                }
+
+                $trolly = TrollyMaster::where('id', $trollyId)->where('active', true)->first();
+                if (!$trolly) {
+                    return $this->error('Trolly not found.', ['code' => 'UNKNOWN_TROLLY'], 404);
+                }
+                if (!$trolly->bundle_id) {
+                    return $this->error('This trolly has no bundle loaded on it.', ['code' => 'NO_BUNDLE_FOR_TROLLY'], 422);
+                }
+
+                $bundle = Bundle::where('id', $trolly->bundle_id)->where('active', true)->first();
+                if (!$bundle) {
+                    return $this->error('The bundle loaded on this trolly is no longer active.', ['code' => 'BUNDLE_NOT_ACTIVE'], 422);
+                }
+
+                return $this->success('Bundle resolved from trolly.', [
+                    'trolly_id' => $trolly->id,
+                    'trolly_code' => $trolly->code,
+                    'bundle_id' => $bundle->id,
+                ]);
+            }
+
+            $bundleId = $this->parseNumericId($bundleCode);
+            if ($bundleId === null) {
+                return $this->error('Unrecognised bundle code.', ['code' => 'UNKNOWN_TICKET'], 422);
+            }
+
+            $bundle = Bundle::where('id', $bundleId)->where('active', true)->first();
+            if (!$bundle) {
+                return $this->error('Bundle not found.', ['code' => 'UNKNOWN_BUNDLE'], 404);
+            }
+
+            $trolly = TrollyMaster::where('bundle_id', $bundle->id)->where('active', true)->first();
+            if (!$trolly) {
+                return $this->error('No active trolly is loaded with this bundle.', ['code' => 'NO_TROLLY_FOR_BUNDLE'], 422);
+            }
+
+            return $this->success('Trolly resolved from bundle.', [
+                'trolly_id' => $trolly->id,
+                'trolly_code' => $trolly->code,
+                'bundle_id' => $bundle->id,
+            ]);
+        } catch (Exception $e) {
+            return $this->error('Failed to resolve trolly/bundle.', $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Resolve a scanned bundle's target ticket for the given operation
      * WITHOUT recording anything — lets the operator review/amend the
      * quantity before it's actually scanned.
@@ -154,7 +228,7 @@ class WipScanController extends Controller
             return $this->error("This operation isn't assigned to you.", ['code' => 'NOT_YOUR_OPERATION'], 403);
         }
 
-        $bundleId = $this->parseBundleId($request->input('ticket_code'));
+        $bundleId = $this->parseNumericId($request->input('ticket_code'));
         if ($bundleId === null) {
             return $this->error('Unrecognised bundle code.', ['code' => 'UNKNOWN_TICKET'], 422);
         }
@@ -203,7 +277,7 @@ class WipScanController extends Controller
             return $this->error("This operation isn't assigned to you.", ['code' => 'NOT_YOUR_OPERATION'], 403);
         }
 
-        $bundleId = $this->parseBundleId($request->input('ticket_code'));
+        $bundleId = $this->parseNumericId($request->input('ticket_code'));
         if ($bundleId === null) {
             return $this->error('Unrecognised bundle code.', ['code' => 'UNKNOWN_TICKET'], 422);
         }
@@ -338,7 +412,7 @@ class WipScanController extends Controller
             return $this->error("This operation isn't assigned to you.", ['code' => 'NOT_YOUR_OPERATION'], 403);
         }
 
-        $bundleId = $this->parseBundleId($request->input('ticket_code'));
+        $bundleId = $this->parseNumericId($request->input('ticket_code'));
         if ($bundleId === null) {
             return $this->error('Unrecognised bundle code.', ['code' => 'UNKNOWN_TICKET'], 422);
         }
@@ -984,17 +1058,17 @@ class WipScanController extends Controller
     }
 
     /**
-     * Extract a bundle id from scanned QR/barcode text. Tickets are assumed
-     * to encode the bundle's numeric id, optionally with a text prefix
-     * (e.g. "BND-000123").
+     * Extract a numeric id from scanned QR/barcode or typed text. Bundle and
+     * trolly codes are both assumed to encode their record's numeric id,
+     * optionally with a text prefix (e.g. "BND-000123").
      */
-    private function parseBundleId(?string $ticketCode): ?int
+    private function parseNumericId(?string $code): ?int
     {
-        if ($ticketCode === null) {
+        if ($code === null) {
             return null;
         }
 
-        if (preg_match('/(\d+)\s*$/', trim($ticketCode), $matches)) {
+        if (preg_match('/(\d+)\s*$/', trim($code), $matches)) {
             return (int) $matches[1];
         }
 

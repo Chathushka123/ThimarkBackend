@@ -11,6 +11,7 @@ use App\Models\BundleTicketReject;
 use App\Models\BundleTicketRework;
 use App\Models\BundleTicketReworkReturn;
 use App\Models\BundleTicketSecondary;
+use App\OperationMaster;
 use App\Services\BundleLedgerService;
 use Carbon\Carbon;
 use Exception;
@@ -41,10 +42,15 @@ class WipDashboardController extends Controller
     }
 
     /**
-     * The current shift(s) actually running right now
-     * (start_date_time <= now <= end_date_time) plus the ids of every
-     * DailyShiftTeam under them, and the hour window (min start, max end)
-     * those shifts cover — the floor screen's whole "current shift" scope.
+     * The single shift actually running right now (active = true and
+     * start_date_time <= now <= end_date_time) plus the ids of every
+     * DailyShiftTeam under it, and its start/end window — the floor
+     * screen's whole "current shift" scope.
+     *
+     * Exactly one such row is a hard business rule (see class docblock's
+     * caller): zero means nothing is running, more than one means the
+     * shift data is broken (overlapping active shifts) — both are reported
+     * back as errors rather than silently guessed at.
      *
      * A scan's daily_shift_team_id is set explicitly at scan time (see
      * WipScanController::scan()) to whichever team the operator picked from
@@ -53,6 +59,9 @@ class WipDashboardController extends Controller
      * activity" — a calendar-day cutoff breaks for any shift that runs past
      * midnight, and would also wrongly include a second, unrelated shift
      * that happens to fall on the same calendar day.
+     *
+     * @throws \RuntimeException if there isn't exactly one active current
+     *                            shift, or it has no active teams assigned.
      */
     private function currentShiftScope(): array
     {
@@ -62,19 +71,24 @@ class WipDashboardController extends Controller
             ->where('end_date_time', '>=', $now)
             ->get();
 
+        if ($shifts->isEmpty()) {
+            throw new \RuntimeException('No active shift is currently running.');
+        }
+        if ($shifts->count() > 1) {
+            throw new \RuntimeException('More than one active shift is currently running.');
+        }
+
+        $shift = $shifts->first();
         $teamIds = DailyShiftTeam::where('active', true)
-            ->whereIn('daily_shift_id', $shifts->pluck('id'))
+            ->where('daily_shift_id', $shift->id)
             ->pluck('id');
 
-        $rangeStart = $shifts->isEmpty() ? $now->copy()->startOfDay() : $shifts->min('start_date_time');
-        $rangeEnd = $shifts->isEmpty() ? $now->copy()->endOfDay() : $shifts->max('end_date_time');
+        if ($teamIds->isEmpty()) {
+            throw new \RuntimeException('The current shift has no teams assigned.');
+        }
 
-        if (!$rangeStart instanceof Carbon) {
-            $rangeStart = Carbon::parse($rangeStart);
-        }
-        if (!$rangeEnd instanceof Carbon) {
-            $rangeEnd = Carbon::parse($rangeEnd);
-        }
+        $rangeStart = $shift->start_date_time;
+        $rangeEnd = $shift->end_date_time;
         if ($rangeEnd->lte($rangeStart)) {
             $rangeEnd = $rangeStart->copy()->addHour();
         }
@@ -83,20 +97,127 @@ class WipDashboardController extends Controller
     }
 
     /**
-     * Same idea as currentShiftScope(), for a date range: every
-     * DailyShiftTeam under a DailyShift whose window overlaps [from, to] —
-     * the management screen's "shifts in this range" scope.
+     * Same idea as currentShiftScope(), for a date range: walk every
+     * calendar date in [from, to], resolve that date's shift by
+     * shift_date + active = true, and collect its DailyShiftTeam ids — the
+     * management screen's "shifts in this range" scope.
+     *
+     * A date with no active shift is skipped (the range may cover a
+     * holiday). A date with more than one active shift, or an active shift
+     * with no active teams, is a broken-data error, same as
+     * currentShiftScope().
+     *
+     * @throws \RuntimeException on a date with more than one active shift,
+     *                            or an active shift with no active teams.
      */
     private function shiftTeamIdsForRange(Carbon $from, Carbon $to)
     {
-        $shiftIds = DailyShift::where('active', true)
-            ->where('start_date_time', '<=', $to)
-            ->where('end_date_time', '>=', $from)
-            ->pluck('id');
+        $teamIds = collect();
+        $cursor = $from->copy()->startOfDay();
+        $lastDay = $to->copy()->startOfDay();
 
-        return DailyShiftTeam::where('active', true)
-            ->whereIn('daily_shift_id', $shiftIds)
-            ->pluck('id');
+        while ($cursor->lte($lastDay)) {
+            $date = $cursor->toDateString();
+
+            $shifts = DailyShift::where('active', true)
+                ->whereDate('shift_date', $date)
+                ->get();
+
+            if ($shifts->count() > 1) {
+                throw new \RuntimeException("More than one active shift found for {$date}.");
+            }
+
+            if ($shifts->isNotEmpty()) {
+                $shift = $shifts->first();
+                $dayTeamIds = DailyShiftTeam::where('active', true)
+                    ->where('daily_shift_id', $shift->id)
+                    ->pluck('id');
+
+                if ($dayTeamIds->isEmpty()) {
+                    throw new \RuntimeException("The shift on {$date} has no teams assigned.");
+                }
+
+                $teamIds = $teamIds->concat($dayTeamIds);
+            }
+
+            $cursor->addDay();
+        }
+
+        return $teamIds->unique()->values();
+    }
+
+    /**
+     * The single active shift's start/end for one calendar date — the hour
+     * axis bounds for a single-day "management" request, mirroring
+     * currentShiftScope()'s window resolution but for an arbitrary past (or
+     * future) date instead of "now".
+     *
+     * @throws \RuntimeException on a date with no active shift, or more
+     *                            than one.
+     */
+    private function shiftWindowForDate(Carbon $date): array
+    {
+        $dateStr = $date->toDateString();
+        $shifts = DailyShift::where('active', true)
+            ->whereDate('shift_date', $dateStr)
+            ->get();
+
+        if ($shifts->isEmpty()) {
+            throw new \RuntimeException("No active shift found for {$dateStr}.");
+        }
+        if ($shifts->count() > 1) {
+            throw new \RuntimeException("More than one active shift found for {$dateStr}.");
+        }
+
+        $shift = $shifts->first();
+        $rangeStart = $shift->start_date_time;
+        $rangeEnd = $shift->end_date_time;
+        if ($rangeEnd->lte($rangeStart)) {
+            $rangeEnd = $rangeStart->copy()->addHour();
+        }
+
+        return [$rangeStart, $rangeEnd];
+    }
+
+    /**
+     * Whole-floor totals shown alongside the per-team scoreboard on both
+     * screens: total WIP (a plain sum of each team's already-computed
+     * wip_qty) and total efficiency — SUM(OUT-direction scan_qty * SMV)
+     * earned across every team, divided by SUM(elapsed minutes *
+     * operator headcount) available across every team, each team's
+     * window clamped to [$windowStart, $windowEnd] and to "now" (so a
+     * window running into today doesn't credit minutes that haven't
+     * happened yet). OUT-only earned minutes here — unlike the per-team
+     * efficiency_pct above, which sums IN+OUT — since only completed
+     * output should count as "produced" for a floor-wide figure.
+     */
+    private function floorTotals($shiftTeamIds, Carbon $windowStart, Carbon $windowEnd, $teamScoreboard): array
+    {
+        $wipQty = (int) collect($teamScoreboard)->sum('wip_qty');
+
+        $earnedOutMinutes = (float) DB::table('bundle_ticket_secondaries as bts')
+            ->join('bundle_tickets as bt', 'bt.id', '=', 'bts.bundle_ticket_id')
+            ->join('work_order_operations as woo', 'woo.id', '=', 'bt.work_order_operation_id')
+            ->where('bts.active', true)
+            ->whereIn('bts.daily_shift_team_id', $shiftTeamIds)
+            ->where('bt.direction', 'OUT')
+            ->sum(DB::raw('bts.scan_qty * woo.smv'));
+
+        $now = now();
+        $availableMinutes = 0;
+        DailyShiftTeam::whereIn('id', $shiftTeamIds)->get()->each(function ($dst) use ($windowStart, $windowEnd, $now, &$availableMinutes) {
+            $start = ($dst->start_date_time ?: $windowStart)->max($windowStart);
+            $end = ($dst->end_date_time ?: $windowEnd)->min($windowEnd)->min($now);
+            if ($end->lte($start)) {
+                return;
+            }
+            $availableMinutes += $start->diffInMinutes($end) * (int) ($dst->no_of_operators ?? 0);
+        });
+
+        return [
+            'wip_qty' => $wipQty,
+            'efficiency_pct' => $availableMinutes > 0 ? round($earnedOutMinutes / $availableMinutes * 100, 1) : 0,
+        ];
     }
 
     /**
@@ -153,7 +274,10 @@ class WipDashboardController extends Controller
                 'station_team_breakdown' => $this->stationTeamBreakdown($shiftTeamIds),
                 'hourly_trend' => $this->hourlyTrend($shiftTeamIds, $shiftStart, $shiftEnd),
                 'team_hourly_trend' => $this->teamHourlyTrend($shiftTeamIds, $shiftStart, $shiftEnd),
+                'floor_totals' => $this->floorTotals($shiftTeamIds, $shiftStart, $shiftEnd, $teamScoreboard),
             ]);
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), null, 422);
         } catch (Exception $e) {
             return $this->error('Failed to retrieve floor dashboard.', $e->getMessage(), 500);
         }
@@ -597,10 +721,10 @@ class WipDashboardController extends Controller
             ->join('bundle_tickets as bt', 'bt.id', '=', 'bundle_ticket_secondaries.bundle_ticket_id')
             ->join('daily_shift_teams as dst', 'dst.id', '=', 'bundle_ticket_secondaries.daily_shift_team_id')
             ->join('teams as tm', 'tm.id', '=', 'dst.team_id')
-            ->groupBy('hour', 'bt.direction', 'dst.id', 'tm.team_name')
+            ->groupBy('hour', 'bt.direction', 'dst.id', 'tm.id', 'tm.team_name')
             ->selectRaw("
                 DATE_FORMAT(bundle_ticket_secondaries.created_at, '%Y-%m-%d %H:00:00') as hour,
-                bt.direction, dst.id as daily_shift_team_id, tm.team_name,
+                bt.direction, dst.id as daily_shift_team_id, tm.id as team_id, tm.team_name,
                 SUM(bundle_ticket_secondaries.scan_qty) as qty
             ")
             ->get();
@@ -613,20 +737,21 @@ class WipDashboardController extends Controller
             $cursor->addHour();
         }
 
-        $teamNames = $rows->pluck('team_name', 'daily_shift_team_id');
-        $teamIds = $teamNames->keys()->sort()->values();
+        $teamRows = $rows->unique('daily_shift_team_id')->keyBy('daily_shift_team_id');
+        $teamIds = $teamRows->keys()->sort()->values();
 
         $qtyFor = function ($teamId, $direction) use ($rows) {
             return $rows->where('daily_shift_team_id', $teamId)->where('direction', $direction)->pluck('qty', 'hour');
         };
 
-        $teams = $teamIds->map(function ($teamId) use ($teamNames, $qtyFor, $hours) {
+        $teams = $teamIds->map(function ($teamId) use ($teamRows, $qtyFor, $hours) {
             $inByHour = $qtyFor($teamId, 'IN');
             $outByHour = $qtyFor($teamId, 'OUT');
 
             return [
                 'daily_shift_team_id' => $teamId,
-                'team_name' => $teamNames[$teamId],
+                'team_id' => $teamRows[$teamId]->team_id,
+                'team_name' => $teamRows[$teamId]->team_name,
                 'in' => collect($hours)->map(fn ($h) => (int) ($inByHour[$h] ?? 0))->values(),
                 'out' => collect($hours)->map(fn ($h) => (int) ($outByHour[$h] ?? 0))->values(),
             ];
@@ -964,27 +1089,42 @@ class WipDashboardController extends Controller
                 return $this->error('The "from" date must not be after the "to" date.', null, 422);
             }
 
-            // Every DailyShiftTeam under a shift whose window overlaps
-            // [from, to] — the range equivalent of floor()'s
-            // currentShiftScope(), and what every query below is scoped to
-            // instead of a bare created_at cutoff.
+            // Every DailyShiftTeam under a shift resolved per calendar date
+            // in [from, to] (see shiftTeamIdsForRange()) — what every query
+            // below is scoped to. No other condition (e.g. a created_at
+            // cutoff) is applied on top of it: membership in this id set is
+            // already the correct, and only, selector for "this range's
+            // activity".
             $shiftTeamIds = $this->shiftTeamIdsForRange($from, $to);
+
+            // A single-day request ("from" and "to" the same date) is
+            // granular enough to break down by hour instead of by day —
+            // teamHourlyTrend() already does exactly that for the floor
+            // screen's current shift; here it's just pointed at the
+            // requested date's shift window instead of "now". "days" keeps
+            // its name even when it holds hour labels ("09:00") so the
+            // heatmap's column source doesn't need a second field.
+            if ($from->isSameDay($to)) {
+                [$shiftStart, $shiftEnd] = $this->shiftWindowForDate($from);
+                $hourlyTrend = $this->teamHourlyTrend($shiftTeamIds, $shiftStart, $shiftEnd);
+                $teamDailyTrend = ['granularity' => 'hour', 'days' => $hourlyTrend['hours'], 'teams' => $hourlyTrend['teams']];
+            } else {
+                $dailyTrend = $this->teamDailyTrend($from, $to, $shiftTeamIds);
+                $teamDailyTrend = ['granularity' => 'day', 'days' => $dailyTrend['days'], 'teams' => $dailyTrend['teams']];
+            }
 
             $scannedByDay = BundleTicketSecondary::where('active', true)
                 ->whereIn('daily_shift_team_id', $shiftTeamIds)
-                ->where('created_at', '>=', $from)->where('created_at', '<=', $to)
                 ->selectRaw('DATE(created_at) as day, SUM(scan_qty) as qty')
                 ->groupBy('day')
                 ->pluck('qty', 'day');
             $rejectedByDay = BundleTicketReject::where('active', true)
                 ->whereIn('daily_shift_team_id', $shiftTeamIds)
-                ->where('created_at', '>=', $from)->where('created_at', '<=', $to)
                 ->selectRaw('DATE(created_at) as day, SUM(reject_qty) as qty')
                 ->groupBy('day')
                 ->pluck('qty', 'day');
             $reworkByDay = BundleTicketRework::where('active', true)
                 ->whereIn('daily_shift_team_id', $shiftTeamIds)
-                ->where('created_at', '>=', $from)->where('created_at', '<=', $to)
                 ->selectRaw('DATE(created_at) as day, SUM(rework_qty) as qty')
                 ->groupBy('day')
                 ->pluck('qty', 'day');
@@ -1015,6 +1155,8 @@ class WipDashboardController extends Controller
             $totalRework = array_sum(array_column($daily, 'rework_qty'));
             $totalHandled = $totalScanned + $totalRejected + $totalRework;
 
+            $teamScoreboard = $this->teamScoreboardRange($from, $to, $shiftTeamIds);
+
             return $this->success('Management dashboard retrieved successfully.', [
                 'from' => $from->toDateString(),
                 'to' => $to->toDateString(),
@@ -1026,14 +1168,200 @@ class WipDashboardController extends Controller
                     'overall_rework_rate_pct' => $totalHandled > 0 ? round($totalRework / $totalHandled * 100, 1) : 0,
                 ],
                 'daily' => $daily,
-                'batch_breakdown' => $this->batchBreakdown($from, $to, $shiftTeamIds),
-                'team_scoreboard' => $this->teamScoreboardRange($from, $to, $shiftTeamIds),
-                'station_team_breakdown' => $this->stationTeamBreakdownRange($from, $to, $shiftTeamIds),
-                'team_daily_trend' => $this->teamDailyTrend($from, $to, $shiftTeamIds),
+                'batch_breakdown' => $this->batchBreakdown($shiftTeamIds),
+                'team_scoreboard' => $teamScoreboard,
+                'station_team_breakdown' => $this->stationTeamBreakdownRange($shiftTeamIds),
+                'team_daily_trend' => $teamDailyTrend,
+                'floor_totals' => $this->floorTotals($shiftTeamIds, $from, $to, $teamScoreboard),
             ]);
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), null, 422);
         } catch (Exception $e) {
             return $this->error('Failed to retrieve management dashboard.', $e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Day-by-day scanned/rejected/rework for one operation — the
+     * "Daily Throughput & Quality" chart's data source, scoped down from
+     * the whole-floor daily() figures used by management(). Defaults to
+     * whichever operation_masters row has is_final_operation = true (the
+     * end of the routing) when the caller doesn't pin one down.
+     */
+    public function dailyThroughputByOperation(Request $request): JsonResponse
+    {
+        try {
+            $operationId = $request->filled('operation_id')
+                ? (int) $request->input('operation_id')
+                : optional(OperationMaster::where('is_final_operation', true)->first())->id;
+
+            if (!$operationId) {
+                return $this->error('No operation_id given and no final operation is configured.', null, 422);
+            }
+
+            $to = $request->filled('to') ? Carbon::parse($request->input('to'))->endOfDay() : now();
+            $from = $request->filled('from') ? Carbon::parse($request->input('from'))->startOfDay() : $to->copy()->subDays(29)->startOfDay();
+
+            if ($from->gt($to)) {
+                return $this->error('The "from" date must not be after the "to" date.', null, 422);
+            }
+
+            $shiftTeamIds = $this->shiftTeamIdsForRange($from, $to);
+
+            // Same single-day-means-hourly rule as management()'s
+            // team_daily_trend: "date" keeps its name even when it holds
+            // an hour label ("09:00") so the chart's x-axis binding
+            // doesn't need to branch on granularity.
+            if ($from->isSameDay($to)) {
+                [$shiftStart, $shiftEnd] = $this->shiftWindowForDate($from);
+                $granularity = 'hour';
+                $daily = $this->hourlyThroughputForOperation($shiftStart, $shiftEnd, $shiftTeamIds, $operationId);
+            } else {
+                $granularity = 'day';
+                $daily = $this->dailyThroughputForOperation($from, $to, $shiftTeamIds, $operationId);
+            }
+
+            return $this->success('Daily throughput retrieved successfully.', [
+                'operation_id' => $operationId,
+                'from' => $from->toDateString(),
+                'to' => $to->toDateString(),
+                'granularity' => $granularity,
+                'daily' => $daily,
+            ]);
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), null, 422);
+        } catch (Exception $e) {
+            return $this->error('Failed to retrieve daily throughput.', $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Same per-day scanned/rejected/rework shape as management()'s
+     * $daily, but scoped to a single operation and, for the "scanned"
+     * side, to OUT-direction tickets only — an operation's IN ticket is
+     * goods arriving to be worked, not output. Reject/rework ledgers
+     * carry no direction of their own (they're already tied to the
+     * scan-out quality check for that operation), so they're taken as-is.
+     */
+    private function dailyThroughputForOperation(Carbon $from, Carbon $to, $shiftTeamIds, int $operationId)
+    {
+        $scannedByDay = DB::table('bundle_ticket_secondaries as t')
+            ->join('bundle_tickets as bt', 'bt.id', '=', 't.bundle_ticket_id')
+            ->join('work_order_operations as woo', 'woo.id', '=', 'bt.work_order_operation_id')
+            ->join('routing_operation_masters as rom', 'rom.id', '=', 'woo.routing_operation_master_id')
+            ->where('t.active', true)
+            ->whereIn('t.daily_shift_team_id', $shiftTeamIds)
+            ->where('rom.operation_id', $operationId)
+            ->where('bt.direction', 'OUT')
+            ->selectRaw('DATE(t.created_at) as day, SUM(t.scan_qty) as qty')
+            ->groupBy('day')
+            ->pluck('qty', 'day');
+
+        $qtyByDay = function (string $table, string $qtyColumn) use ($shiftTeamIds, $operationId) {
+            return DB::table("$table as t")
+                ->join('bundle_tickets as bt', 'bt.id', '=', 't.bundle_ticket_id')
+                ->join('work_order_operations as woo', 'woo.id', '=', 'bt.work_order_operation_id')
+                ->join('routing_operation_masters as rom', 'rom.id', '=', 'woo.routing_operation_master_id')
+                ->where('t.active', true)
+                ->whereIn('t.daily_shift_team_id', $shiftTeamIds)
+                ->where('rom.operation_id', $operationId)
+                ->selectRaw("DATE(t.created_at) as day, SUM(t.$qtyColumn) as qty")
+                ->groupBy('day')
+                ->pluck('qty', 'day');
+        };
+
+        $rejectedByDay = $qtyByDay('bundle_ticket_rejects', 'reject_qty');
+        $reworkByDay = $qtyByDay('bundle_ticket_reworks', 'rework_qty');
+
+        $daily = [];
+        $cursor = $from->copy()->startOfDay();
+        $lastDay = $to->copy()->startOfDay();
+        while ($cursor->lte($lastDay)) {
+            $date = $cursor->toDateString();
+            $scannedQty = (int) ($scannedByDay[$date] ?? 0);
+            $rejectedQty = (int) ($rejectedByDay[$date] ?? 0);
+            $reworkQty = (int) ($reworkByDay[$date] ?? 0);
+            $handled = $scannedQty + $rejectedQty + $reworkQty;
+
+            $daily[] = [
+                'date' => $date,
+                'scanned_qty' => $scannedQty,
+                'rejected_qty' => $rejectedQty,
+                'rework_qty' => $reworkQty,
+                'reject_rate_pct' => $handled > 0 ? round($rejectedQty / $handled * 100, 1) : 0,
+                'rework_rate_pct' => $handled > 0 ? round($reworkQty / $handled * 100, 1) : 0,
+            ];
+            $cursor->addDay();
+        }
+
+        return $daily;
+    }
+
+    /**
+     * Hour-by-hour sibling of dailyThroughputForOperation(), for a
+     * single-day request — same OUT-only scanned / as-is reject-rework
+     * scoping, just bucketed by the requested date's shift hour instead
+     * of by calendar day.
+     */
+    private function hourlyThroughputForOperation(Carbon $shiftStart, Carbon $shiftEnd, $shiftTeamIds, int $operationId)
+    {
+        $rangeStart = $shiftStart;
+        $rangeEnd = $shiftEnd;
+
+        $scannedByHour = DB::table('bundle_ticket_secondaries as t')
+            ->join('bundle_tickets as bt', 'bt.id', '=', 't.bundle_ticket_id')
+            ->join('work_order_operations as woo', 'woo.id', '=', 'bt.work_order_operation_id')
+            ->join('routing_operation_masters as rom', 'rom.id', '=', 'woo.routing_operation_master_id')
+            ->where('t.active', true)
+            ->whereIn('t.daily_shift_team_id', $shiftTeamIds)
+            ->where('rom.operation_id', $operationId)
+            ->where('bt.direction', 'OUT')
+            ->where('t.created_at', '>=', $rangeStart)
+            ->where('t.created_at', '<=', $rangeEnd)
+            ->selectRaw("DATE_FORMAT(t.created_at, '%Y-%m-%d %H:00:00') as hour, SUM(t.scan_qty) as qty")
+            ->groupBy('hour')
+            ->pluck('qty', 'hour');
+
+        $qtyByHour = function (string $table, string $qtyColumn) use ($shiftTeamIds, $operationId, $rangeStart, $rangeEnd) {
+            return DB::table("$table as t")
+                ->join('bundle_tickets as bt', 'bt.id', '=', 't.bundle_ticket_id')
+                ->join('work_order_operations as woo', 'woo.id', '=', 'bt.work_order_operation_id')
+                ->join('routing_operation_masters as rom', 'rom.id', '=', 'woo.routing_operation_master_id')
+                ->where('t.active', true)
+                ->whereIn('t.daily_shift_team_id', $shiftTeamIds)
+                ->where('rom.operation_id', $operationId)
+                ->where('t.created_at', '>=', $rangeStart)
+                ->where('t.created_at', '<=', $rangeEnd)
+                ->selectRaw("DATE_FORMAT(t.created_at, '%Y-%m-%d %H:00:00') as hour, SUM(t.$qtyColumn) as qty")
+                ->groupBy('hour')
+                ->pluck('qty', 'hour');
+        };
+
+        $rejectedByHour = $qtyByHour('bundle_ticket_rejects', 'reject_qty');
+        $reworkByHour = $qtyByHour('bundle_ticket_reworks', 'rework_qty');
+
+        $hourly = [];
+        $cursor = $rangeStart->copy()->startOfHour();
+        $lastHour = $rangeEnd->copy()->startOfHour();
+        while ($cursor->lte($lastHour)) {
+            $key = $cursor->format('Y-m-d H:00:00');
+            $scannedQty = (int) ($scannedByHour[$key] ?? 0);
+            $rejectedQty = (int) ($rejectedByHour[$key] ?? 0);
+            $reworkQty = (int) ($reworkByHour[$key] ?? 0);
+            $handled = $scannedQty + $rejectedQty + $reworkQty;
+
+            $hourly[] = [
+                'date' => $cursor->format('H:i'),
+                'scanned_qty' => $scannedQty,
+                'rejected_qty' => $rejectedQty,
+                'rework_qty' => $reworkQty,
+                'reject_rate_pct' => $handled > 0 ? round($rejectedQty / $handled * 100, 1) : 0,
+                'rework_rate_pct' => $handled > 0 ? round($reworkQty / $handled * 100, 1) : 0,
+            ];
+            $cursor->addHour();
+        }
+
+        return $hourly;
     }
 
     /**
@@ -1042,11 +1370,11 @@ class WipDashboardController extends Controller
      * and how clean is each one" view a production manager or MD needs,
      * on top of the day-by-day trend above.
      */
-    private function batchBreakdown($from, $to, $shiftTeamIds)
+    private function batchBreakdown($shiftTeamIds)
     {
-        $scanned = $this->batchQtyByGroup('bundle_ticket_secondaries', 'scan_qty', $from, $to, $shiftTeamIds);
-        $rejected = $this->batchQtyByGroup('bundle_ticket_rejects', 'reject_qty', $from, $to, $shiftTeamIds);
-        $reworked = $this->batchQtyByGroup('bundle_ticket_reworks', 'rework_qty', $from, $to, $shiftTeamIds);
+        $scanned = $this->batchQtyByGroup('bundle_ticket_secondaries', 'scan_qty', $shiftTeamIds);
+        $rejected = $this->batchQtyByGroup('bundle_ticket_rejects', 'reject_qty', $shiftTeamIds);
+        $reworked = $this->batchQtyByGroup('bundle_ticket_reworks', 'rework_qty', $shiftTeamIds);
 
         $keys = $scanned->keys()->concat($rejected->keys())->concat($reworked->keys())->unique();
 
@@ -1079,7 +1407,7 @@ class WipDashboardController extends Controller
      * authoritative model for a work order, since one batch can be split
      * across several models (batch_details).
      */
-    private function batchQtyByGroup(string $table, string $qtyColumn, $from, $to, $shiftTeamIds)
+    private function batchQtyByGroup(string $table, string $qtyColumn, $shiftTeamIds)
     {
         return DB::table("$table as t")
             ->join('bundle_tickets as bt', 'bt.id', '=', 't.bundle_ticket_id')
@@ -1091,8 +1419,6 @@ class WipDashboardController extends Controller
             ->leftJoin('main_models as mm', 'mm.id', '=', 'mo.main_model_id')
             ->where('t.active', true)
             ->whereIn('t.daily_shift_team_id', $shiftTeamIds)
-            ->where('t.created_at', '>=', $from)
-            ->where('t.created_at', '<=', $to)
             ->groupBy('ba.id', 'ba.batch_no', 'mo.id', 'mo.name', 'mm.id', 'mm.name')
             ->selectRaw("
                 ba.id as batch_id, ba.batch_no,
@@ -1115,13 +1441,11 @@ class WipDashboardController extends Controller
      */
     private function teamScoreboardRange(Carbon $from, Carbon $to, $shiftTeamIds)
     {
-        $groupByTeam = function (string $table, string $qtyColumn) use ($from, $to, $shiftTeamIds) {
+        $groupByTeam = function (string $table, string $qtyColumn) use ($shiftTeamIds) {
             return DB::table("$table as t")
                 ->join('daily_shift_teams as dst', 'dst.id', '=', 't.daily_shift_team_id')
                 ->where('t.active', true)
                 ->whereIn('t.daily_shift_team_id', $shiftTeamIds)
-                ->where('t.created_at', '>=', $from)
-                ->where('t.created_at', '<=', $to)
                 ->groupBy('dst.team_id')
                 ->selectRaw("dst.team_id, SUM(t.$qtyColumn) as qty")
                 ->pluck('qty', 'team_id');
@@ -1136,8 +1460,6 @@ class WipDashboardController extends Controller
             ->join('bundle_tickets as bt', 'bt.id', '=', 't.bundle_ticket_id')
             ->where('t.active', true)
             ->whereIn('t.daily_shift_team_id', $shiftTeamIds)
-            ->where('t.created_at', '>=', $from)
-            ->where('t.created_at', '<=', $to)
             ->groupBy('dst.team_id', 'bt.direction')
             ->selectRaw('dst.team_id, bt.direction, SUM(t.scan_qty) as qty')
             ->get();
@@ -1149,8 +1471,6 @@ class WipDashboardController extends Controller
             ->join('daily_shift_teams as dst', 'dst.id', '=', 't.daily_shift_team_id')
             ->where('t.active', true)
             ->whereIn('t.daily_shift_team_id', $shiftTeamIds)
-            ->where('t.created_at', '>=', $from)
-            ->where('t.created_at', '<=', $to)
             ->groupBy('dst.team_id')
             ->selectRaw('dst.team_id, SUM(t.return_qty + t.reject_qty) as qty')
             ->pluck('qty', 'team_id');
@@ -1160,8 +1480,6 @@ class WipDashboardController extends Controller
             ->join('daily_shift_teams as dst', 'dst.id', '=', 'bts.daily_shift_team_id')
             ->where('bts.active', true)
             ->whereIn('bts.daily_shift_team_id', $shiftTeamIds)
-            ->where('bts.created_at', '>=', $from)
-            ->where('bts.created_at', '<=', $to)
             ->groupBy('dst.team_id')
             ->selectRaw('dst.team_id, SUM(bts.scan_qty * woo.smv) as minutes')
             ->pluck('minutes', 'team_id');
@@ -1230,9 +1548,9 @@ class WipDashboardController extends Controller
      * (teams.id) over a date range instead of a single day's
      * daily_shift_team_id.
      */
-    private function stationTeamBreakdownRange(Carbon $from, Carbon $to, $shiftTeamIds)
+    private function stationTeamBreakdownRange($shiftTeamIds)
     {
-        $rows = function (string $table, string $qtyColumn) use ($from, $to, $shiftTeamIds) {
+        $rows = function (string $table, string $qtyColumn) use ($shiftTeamIds) {
             return DB::table("$table as t")
                 ->join('bundle_tickets as bt', 'bt.id', '=', 't.bundle_ticket_id')
                 ->join('work_order_operations as woo', 'woo.id', '=', 'bt.work_order_operation_id')
@@ -1242,8 +1560,6 @@ class WipDashboardController extends Controller
                 ->join('teams as tm', 'tm.id', '=', 'dst.team_id')
                 ->where('t.active', true)
                 ->whereIn('t.daily_shift_team_id', $shiftTeamIds)
-                ->where('t.created_at', '>=', $from)
-                ->where('t.created_at', '<=', $to)
                 ->groupBy('om.id', 'om.operation_code', 'om.description', 'tm.id', 'tm.team_name')
                 ->selectRaw("
                     om.id as operation_id, om.operation_code, om.description as operation_description,
@@ -1254,7 +1570,7 @@ class WipDashboardController extends Controller
                 ->keyBy(fn ($row) => $row->operation_id . '-' . $row->team_id);
         };
 
-        $good = $this->goodQtyByOperationTeamRange($from, $to, $shiftTeamIds);
+        $good = $this->goodQtyByOperationTeamRange($shiftTeamIds);
         $reject = $rows('bundle_ticket_rejects', 'reject_qty');
         $rework = $rows('bundle_ticket_reworks', 'rework_qty');
 
@@ -1281,7 +1597,7 @@ class WipDashboardController extends Controller
      * release-direction logic, grouped by the underlying team (teams.id)
      * over [from, to] instead of a single day's daily_shift_team_id.
      */
-    private function goodQtyByOperationTeamRange(Carbon $from, Carbon $to, $shiftTeamIds)
+    private function goodQtyByOperationTeamRange($shiftTeamIds)
     {
         return DB::table('bundle_ticket_secondaries as t')
             ->join('bundle_tickets as bt', 'bt.id', '=', 't.bundle_ticket_id')
@@ -1292,8 +1608,6 @@ class WipDashboardController extends Controller
             ->join('teams as tm', 'tm.id', '=', 'dst.team_id')
             ->where('t.active', true)
             ->whereIn('t.daily_shift_team_id', $shiftTeamIds)
-            ->where('t.created_at', '>=', $from)
-            ->where('t.created_at', '<=', $to)
             ->groupBy('om.id', 'om.operation_code', 'om.description', 'tm.id', 'tm.team_name', 'rom.out', 'bt.direction')
             ->selectRaw("
                 om.id as operation_id, om.operation_code, om.description as operation_description,
@@ -1328,8 +1642,6 @@ class WipDashboardController extends Controller
     {
         $rows = BundleTicketSecondary::where('bundle_ticket_secondaries.active', true)
             ->whereIn('bundle_ticket_secondaries.daily_shift_team_id', $shiftTeamIds)
-            ->where('bundle_ticket_secondaries.created_at', '>=', $from)
-            ->where('bundle_ticket_secondaries.created_at', '<=', $to)
             ->join('bundle_tickets as bt', 'bt.id', '=', 'bundle_ticket_secondaries.bundle_ticket_id')
             ->join('daily_shift_teams as dst', 'dst.id', '=', 'bundle_ticket_secondaries.daily_shift_team_id')
             ->join('teams as tm', 'tm.id', '=', 'dst.team_id')

@@ -124,8 +124,35 @@ class WorkOrderStatusReportRepository
             ->selectRaw('bundle_ticket_id, SUM(scan_qty) as total')
             ->pluck('total', 'bundle_ticket_id');
 
+        // Reject qty per ticket - covers BOTH direct rejects and post-rework
+        // rejects, since a rework return records its reject slice as an
+        // ordinary bundle_ticket_rejects row (source=REWORK_REJECT) against
+        // this same ticket - see BundleTicketReworkReturn's docblock.
+        $rejectByTicket = BundleTicketReject::whereIn('bundle_ticket_id', $ticketIds)
+            ->where('active', true)
+            ->groupBy('bundle_ticket_id')
+            ->selectRaw('bundle_ticket_id, SUM(reject_qty) as total')
+            ->pluck('total', 'bundle_ticket_id');
+
+        // Rework qty sent (gross - not netted against returns) and rework
+        // return qty (return_qty + reject_qty - everything the rework team
+        // has resolved, whether it came back good or was rejected after
+        // rework) per ticket.
+        $reworkSentByTicket = BundleTicketRework::whereIn('bundle_ticket_id', $ticketIds)
+            ->where('active', true)
+            ->groupBy('bundle_ticket_id')
+            ->selectRaw('bundle_ticket_id, SUM(rework_qty) as total')
+            ->pluck('total', 'bundle_ticket_id');
+        $reworkReturnByTicket = BundleTicketReworkReturn::whereIn('bundle_ticket_id', $ticketIds)
+            ->where('active', true)
+            ->groupBy('bundle_ticket_id')
+            ->selectRaw('bundle_ticket_id, SUM(return_qty + reject_qty) as total')
+            ->pluck('total', 'bundle_ticket_id');
+
         // Reject/rework/return totals, rolled up per bundle across every one
-        // of its tickets (i.e. across all of that bundle's operations).
+        // of its tickets (i.e. across all of that bundle's operations) -
+        // informational summary columns only, not used in the per-operation
+        // WIP calculation below.
         $rejectByBundle = $this->sumGroupedByBundle(
             BundleTicketReject::whereIn('bundle_ticket_id', $ticketIds)->where('active', true),
             'reject_qty',
@@ -138,7 +165,7 @@ class WorkOrderStatusReportRepository
         );
         $returnByBundle = $this->sumGroupedByBundle(
             BundleTicketReworkReturn::whereIn('bundle_ticket_id', $ticketIds)->where('active', true),
-            'return_qty',
+            'return_qty + reject_qty',
             $ticketToBundle
         );
 
@@ -188,13 +215,26 @@ class WorkOrderStatusReportRepository
                 if ($opInfo['out']) {
                     $outTicketId = $ticketByKey["{$bundle->id}:{$wooId}:OUT"] ?? null;
                     $outQty = (int) ($scannedByTicket[$outTicketId] ?? 0);
+                    $outRejectQty = (int) ($rejectByTicket[$outTicketId] ?? 0);
+                    $outReworkQty = (int) ($reworkSentByTicket[$outTicketId] ?? 0);
+                    $outReworkReturnQty = (int) ($reworkReturnByTicket[$outTicketId] ?? 0);
                 } else {
                     $outQty = null;
+                    $outRejectQty = 0;
+                    $outReworkQty = 0;
+                    $outReworkReturnQty = 0;
                 }
 
                 $row["{$key}_IN"] = $inQty;
                 $row["{$key}_OUT"] = $outQty;
-                $row["{$key}_WIP"] = ($inQty !== null && $outQty !== null) ? ($inQty - $outQty) : null;
+                // WIP still sitting at this operation: what came IN, minus
+                // what's gone OUT as good, minus rejects, minus everything
+                // sent to rework, plus back whatever rework has already
+                // resolved (returned good or rejected after rework) - what's
+                // left unadded is exactly the rework qty still outstanding.
+                $row["{$key}_WIP"] = ($inQty !== null && $outQty !== null)
+                    ? max(0, $inQty - $outQty - $outRejectQty - $outReworkQty + $outReworkReturnQty)
+                    : null;
             }
 
             $row['total_reject_qty'] = (int) ($rejectByBundle[$bundle->id] ?? 0);

@@ -710,6 +710,7 @@ Route::prefix('v1')->group(function () {
         Route::get('wipScan/myOperations', 'Api\WipScanController@myOperations')->name('wipScan.myOperations');
         Route::get('wipScan/myTeams', 'Api\WipScanController@myTeams')->name('wipScan.myTeams');
         Route::get('wipScan/reasons/{type}', 'Api\WipScanController@reasons')->name('wipScan.reasons');
+        Route::get('wipScan/resolveTrolley', 'Api\WipScanController@resolveTrolley')->name('wipScan.resolveTrolley');
         Route::post('wipScan/lookup', 'Api\WipScanController@lookup')->name('wipScan.lookup');
         Route::post('wipScan/scan', 'Api\WipScanController@scan')->name('wipScan.scan');
         Route::post('wipScan/sendToRework', 'Api\WipScanController@sendToRework')->name('wipScan.sendToRework');
@@ -725,6 +726,7 @@ Route::prefix('v1')->group(function () {
         // WIP Dashboards (Production Floor + Management)
         Route::get('wipDashboard/floor', 'Api\WipDashboardController@floor')->name('wipDashboard.floor');
         Route::get('wipDashboard/management', 'Api\WipDashboardController@management')->name('wipDashboard.management');
+        Route::get('wipDashboard/dailyThroughputByOperation', 'Api\WipDashboardController@dailyThroughputByOperation')->name('wipDashboard.dailyThroughputByOperation');
         Route::get('wipDashboard/teamBatchSummary', 'Api\WipDashboardController@teamBatchSummary')->name('wipDashboard.teamBatchSummary');
         Route::get('wipDashboard/teamBatchSummaryRange', 'Api\WipDashboardController@teamBatchSummaryRange')->name('wipDashboard.teamBatchSummaryRange');
         Route::get('wipDashboard/batchBundles', 'Api\WipDashboardController@batchBundles')->name('wipDashboard.batchBundles');

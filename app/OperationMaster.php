@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
  * @property string $operation_code
  * @property string $description
  * @property bool $active
+ * @property bool $is_final_operation
  * @property int|null $created_by
  * @property int|null $updated_by
  */
@@ -33,6 +34,7 @@ class OperationMaster extends Model
         'operation_code',
         'description',
         'active',
+        'is_final_operation',
     ];
 
     /**
@@ -40,6 +42,7 @@ class OperationMaster extends Model
      */
     protected $casts = [
         'active' => 'boolean',
+        'is_final_operation' => 'boolean',
     ];
 
     /**
@@ -56,6 +59,14 @@ class OperationMaster extends Model
 
         static::updating(function (OperationMaster $model) {
             $model->updated_by = Auth::id();
+        });
+
+        static::saving(function (OperationMaster $model) {
+            if ($model->is_final_operation) {
+                static::where('id', '!=', $model->id ?? 0)
+                    ->where('is_final_operation', true)
+                    ->update(['is_final_operation' => false]);
+            }
         });
     }
 

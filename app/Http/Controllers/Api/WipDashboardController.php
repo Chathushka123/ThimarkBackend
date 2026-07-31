@@ -458,11 +458,23 @@ class WipDashboardController extends Controller
         $scannedByDirection = BundleTicketSecondary::where('bundle_ticket_secondaries.active', true)
             ->whereIn('bundle_ticket_secondaries.daily_shift_team_id', $shiftTeamIds)
             ->join('bundle_tickets as bt', 'bt.id', '=', 'bundle_ticket_secondaries.bundle_ticket_id')
-            ->groupBy('daily_shift_team_id', 'bt.direction')
-            ->selectRaw('daily_shift_team_id, bt.direction, SUM(scan_qty) as qty')
+            ->join('work_order_operations as woo', 'woo.id', '=', 'bt.work_order_operation_id')
+            ->join('routing_operation_masters as rom', 'rom.id', '=', 'woo.routing_operation_master_id')
+            ->groupBy('daily_shift_team_id', 'bt.direction', 'rom.out')
+            ->selectRaw('daily_shift_team_id, bt.direction, rom.out as has_out, SUM(scan_qty) as qty')
             ->get();
-        $scannedIn = $scannedByDirection->where('direction', 'IN')->pluck('qty', 'daily_shift_team_id');
-        $scannedOut = $scannedByDirection->where('direction', 'OUT')->pluck('qty', 'daily_shift_team_id');
+        $scannedIn = $scannedByDirection->where('direction', 'IN')->groupBy('daily_shift_team_id')->map(fn ($rows) => $rows->sum('qty'));
+        $scannedOut = $scannedByDirection->where('direction', 'OUT')->groupBy('daily_shift_team_id')->map(fn ($rows) => $rows->sum('qty'));
+        // "Scanned" as shown on the team card/scoreboard means completed
+        // output, not raw scan events — a piece scanned IN and later OUT is
+        // one piece, not two. Same release-direction convention as
+        // goodQtyByOperationTeam()/BundleLedgerService::releaseInfoOf():
+        // OUT-direction qty, falling back to IN for routing steps with no
+        // OUT step at all.
+        $scannedReleased = $scannedByDirection
+            ->filter(fn ($row) => $row->direction === ($row->has_out ? 'OUT' : 'IN'))
+            ->groupBy('daily_shift_team_id')
+            ->map(fn ($rows) => $rows->sum('qty'));
         $rejected = BundleTicketReject::where('active', true)
             ->whereIn('daily_shift_team_id', $shiftTeamIds)
             ->groupBy('daily_shift_team_id')
@@ -498,10 +510,10 @@ class WipDashboardController extends Controller
         $teamIds = $scannedIn->keys()->concat($scannedOut->keys())->concat($rejected->keys())->concat($reworked->keys())->unique();
         $teams = DailyShiftTeam::with(['team.operation', 'dailyShift'])->whereIn('id', $teamIds)->get()->keyBy('id');
 
-        return $teamIds->map(function ($id) use ($scannedIn, $scannedOut, $rejected, $reworked, $reworkResolved, $earnedMinutes, $teams) {
+        return $teamIds->map(function ($id) use ($scannedIn, $scannedOut, $scannedReleased, $rejected, $reworked, $reworkResolved, $earnedMinutes, $teams) {
             $scannedInQty = (int) ($scannedIn[$id] ?? 0);
             $scannedOutQty = (int) ($scannedOut[$id] ?? 0);
-            $scannedQty = $scannedInQty + $scannedOutQty;
+            $scannedQty = (int) ($scannedReleased[$id] ?? 0);
             $rejectedQty = (int) ($rejected[$id] ?? 0);
             $reworkQty = (int) ($reworked[$id] ?? 0);
             $reworkOutstanding = max(0, $reworkQty - (int) ($reworkResolved[$id] ?? 0));
@@ -809,11 +821,40 @@ class WipDashboardController extends Controller
             $rejected = $groupBy('bundle_ticket_rejects', 'reject_qty');
             $reworked = $groupBy('bundle_ticket_reworks', 'rework_qty');
 
+            // Same double-scan problem as teamBatchSummary(): a piece
+            // scanned IN and later OUT at a routing step that has both is
+            // one piece, not two, so scanned_qty must use only the
+            // release-direction qty (OUT, falling back to IN when the
+            // routing step has no OUT step) — see
+            // goodQtyByOperationTeam()/BundleLedgerService::releaseInfoOf().
+            $scannedByDirection = DB::table('bundle_ticket_secondaries as t')
+                ->join('bundle_tickets as bt', 'bt.id', '=', 't.bundle_ticket_id')
+                ->join('bundles as b', 'b.id', '=', 'bt.bundle_id')
+                ->join('work_orders as wo', 'wo.id', '=', 'b.work_order_id')
+                ->join('batch_details as bd', 'bd.id', '=', 'wo.batch_detail_id')
+                ->join('batches as ba', 'ba.id', '=', 'bd.batch_id')
+                ->join('models as mo', 'mo.id', '=', 'bd.model_id')
+                ->join('daily_shift_teams as dst', 'dst.id', '=', 't.daily_shift_team_id')
+                ->join('work_order_operations as woo', 'woo.id', '=', 'bt.work_order_operation_id')
+                ->join('routing_operation_masters as rom', 'rom.id', '=', 'woo.routing_operation_master_id')
+                ->where('t.active', true)
+                ->where('t.created_at', '>=', $from)
+                ->where('t.created_at', '<=', $to)
+                ->where('dst.team_id', $teamId)
+                ->groupBy('ba.id', 'mo.id', 'bt.direction', 'rom.out')
+                ->selectRaw('ba.id as batch_id, mo.id as model_id, bt.direction, rom.out as has_out, SUM(t.scan_qty) as qty')
+                ->get();
+            $keyer = fn ($row) => $row->batch_id . '-' . $row->model_id;
+            $scannedReleased = $scannedByDirection
+                ->filter(fn ($row) => $row->direction === ($row->has_out ? 'OUT' : 'IN'))
+                ->groupBy($keyer)
+                ->map(fn ($rows) => $rows->sum('qty'));
+
             $keys = $scanned->keys()->concat($rejected->keys())->concat($reworked->keys())->unique();
 
-            $rows = $keys->map(function ($key) use ($scanned, $rejected, $reworked) {
+            $rows = $keys->map(function ($key) use ($scanned, $rejected, $reworked, $scannedReleased) {
                 $row = $scanned[$key] ?? $rejected[$key] ?? $reworked[$key];
-                $scannedQty = (int) optional($scanned[$key] ?? null)->qty;
+                $scannedQty = (int) ($scannedReleased[$key] ?? 0);
                 $rejectedQty = (int) optional($rejected[$key] ?? null)->qty;
                 $reworkQty = (int) optional($reworked[$key] ?? null)->qty;
                 $handled = $scannedQty + $rejectedQty + $reworkQty;
@@ -890,7 +931,10 @@ class WipDashboardController extends Controller
 
             // Same scanned total split by direction as teamScoreboard(), so
             // this batch-level wip_qty nets IN against OUT instead of
-            // adding them together.
+            // adding them together. Also carries rom.out so scanned_qty
+            // below can report completed/released output only (OUT,
+            // falling back to IN when the routing step has no OUT step)
+            // instead of double-counting a piece scanned both IN and OUT.
             $scannedByDirection = DB::table('bundle_ticket_secondaries as t')
                 ->join('bundle_tickets as bt', 'bt.id', '=', 't.bundle_ticket_id')
                 ->join('bundles as b', 'b.id', '=', 'bt.bundle_id')
@@ -898,26 +942,32 @@ class WipDashboardController extends Controller
                 ->join('batch_details as bd', 'bd.id', '=', 'wo.batch_detail_id')
                 ->join('batches as ba', 'ba.id', '=', 'bd.batch_id')
                 ->join('models as mo', 'mo.id', '=', 'bd.model_id')
+                ->join('work_order_operations as woo', 'woo.id', '=', 'bt.work_order_operation_id')
+                ->join('routing_operation_masters as rom', 'rom.id', '=', 'woo.routing_operation_master_id')
                 ->where('t.active', true)
                 ->where('t.daily_shift_team_id', $teamId)
-                ->groupBy('ba.id', 'mo.id', 'bt.direction')
-                ->selectRaw('ba.id as batch_id, mo.id as model_id, bt.direction, SUM(t.scan_qty) as qty')
+                ->groupBy('ba.id', 'mo.id', 'bt.direction', 'rom.out')
+                ->selectRaw('ba.id as batch_id, mo.id as model_id, bt.direction, rom.out as has_out, SUM(t.scan_qty) as qty')
                 ->get();
             $keyer = fn ($row) => $row->batch_id . '-' . $row->model_id;
-            $scannedIn = $scannedByDirection->where('direction', 'IN')->keyBy($keyer);
-            $scannedOut = $scannedByDirection->where('direction', 'OUT')->keyBy($keyer);
+            $scannedIn = $scannedByDirection->where('direction', 'IN')->groupBy($keyer)->map(fn ($rows) => $rows->sum('qty'));
+            $scannedOut = $scannedByDirection->where('direction', 'OUT')->groupBy($keyer)->map(fn ($rows) => $rows->sum('qty'));
+            $scannedReleased = $scannedByDirection
+                ->filter(fn ($row) => $row->direction === ($row->has_out ? 'OUT' : 'IN'))
+                ->groupBy($keyer)
+                ->map(fn ($rows) => $rows->sum('qty'));
 
             $keys = $scanned->keys()->concat($rejected->keys())->concat($reworked->keys())->unique();
 
-            $rows = $keys->map(function ($key) use ($scanned, $rejected, $reworked, $reworkResolved, $scannedIn, $scannedOut) {
+            $rows = $keys->map(function ($key) use ($scanned, $rejected, $reworked, $reworkResolved, $scannedIn, $scannedOut, $scannedReleased) {
                 $row = $scanned[$key] ?? $rejected[$key] ?? $reworked[$key];
-                $scannedQty = (int) optional($scanned[$key] ?? null)->qty;
+                $scannedQty = (int) ($scannedReleased[$key] ?? 0);
                 $rejectedQty = (int) optional($rejected[$key] ?? null)->qty;
                 $reworkQty = (int) optional($reworked[$key] ?? null)->qty;
                 $reworkOutstanding = max(0, $reworkQty - (int) optional($reworkResolved[$key] ?? null)->qty);
                 $handled = $scannedQty + $rejectedQty + $reworkQty;
-                $scannedInQty = (int) optional($scannedIn[$key] ?? null)->qty;
-                $scannedOutQty = (int) optional($scannedOut[$key] ?? null)->qty;
+                $scannedInQty = (int) ($scannedIn[$key] ?? 0);
+                $scannedOutQty = (int) ($scannedOut[$key] ?? 0);
 
                 return [
                     'main_model_id' => $row->main_model_id,
@@ -1458,13 +1508,22 @@ class WipDashboardController extends Controller
         $scannedByDirection = DB::table('bundle_ticket_secondaries as t')
             ->join('daily_shift_teams as dst', 'dst.id', '=', 't.daily_shift_team_id')
             ->join('bundle_tickets as bt', 'bt.id', '=', 't.bundle_ticket_id')
+            ->join('work_order_operations as woo', 'woo.id', '=', 'bt.work_order_operation_id')
+            ->join('routing_operation_masters as rom', 'rom.id', '=', 'woo.routing_operation_master_id')
             ->where('t.active', true)
             ->whereIn('t.daily_shift_team_id', $shiftTeamIds)
-            ->groupBy('dst.team_id', 'bt.direction')
-            ->selectRaw('dst.team_id, bt.direction, SUM(t.scan_qty) as qty')
+            ->groupBy('dst.team_id', 'bt.direction', 'rom.out')
+            ->selectRaw('dst.team_id, bt.direction, rom.out as has_out, SUM(t.scan_qty) as qty')
             ->get();
-        $scannedIn = $scannedByDirection->where('direction', 'IN')->pluck('qty', 'team_id');
-        $scannedOut = $scannedByDirection->where('direction', 'OUT')->pluck('qty', 'team_id');
+        $scannedIn = $scannedByDirection->where('direction', 'IN')->groupBy('team_id')->map(fn ($rows) => $rows->sum('qty'));
+        $scannedOut = $scannedByDirection->where('direction', 'OUT')->groupBy('team_id')->map(fn ($rows) => $rows->sum('qty'));
+        // scanned_qty is completed/released output, not raw scan events —
+        // OUT-direction qty, falling back to IN when the routing step has
+        // no OUT step. Same fix as teamScoreboard()'s $scannedReleased.
+        $scannedReleased = $scannedByDirection
+            ->filter(fn ($row) => $row->direction === ($row->has_out ? 'OUT' : 'IN'))
+            ->groupBy('team_id')
+            ->map(fn ($rows) => $rows->sum('qty'));
         $rejected = $groupByTeam('bundle_ticket_rejects', 'reject_qty');
         $reworked = $groupByTeam('bundle_ticket_reworks', 'rework_qty');
         $reworkResolved = DB::table('bundle_ticket_rework_returns as t')
@@ -1512,10 +1571,10 @@ class WipDashboardController extends Controller
 
         $teams = Team::with('operation')->whereIn('id', $teamIds)->get()->keyBy('id');
 
-        return $teamIds->map(function ($teamId) use ($scannedIn, $scannedOut, $rejected, $reworked, $reworkResolved, $earnedMinutesByTeam, $availableMinutesByTeam, $teams) {
+        return $teamIds->map(function ($teamId) use ($scannedIn, $scannedOut, $scannedReleased, $rejected, $reworked, $reworkResolved, $earnedMinutesByTeam, $availableMinutesByTeam, $teams) {
             $scannedInQty = (int) ($scannedIn[$teamId] ?? 0);
             $scannedOutQty = (int) ($scannedOut[$teamId] ?? 0);
-            $scannedQty = $scannedInQty + $scannedOutQty;
+            $scannedQty = (int) ($scannedReleased[$teamId] ?? 0);
             $rejectedQty = (int) ($rejected[$teamId] ?? 0);
             $reworkQty = (int) ($reworked[$teamId] ?? 0);
             $reworkOutstanding = max(0, $reworkQty - (int) ($reworkResolved[$teamId] ?? 0));

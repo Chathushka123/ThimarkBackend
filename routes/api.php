@@ -727,6 +727,7 @@ Route::prefix('v1')->group(function () {
         Route::get('wipDashboard/floor', 'Api\WipDashboardController@floor')->name('wipDashboard.floor');
         Route::get('wipDashboard/management', 'Api\WipDashboardController@management')->name('wipDashboard.management');
         Route::get('wipDashboard/dailyThroughputByOperation', 'Api\WipDashboardController@dailyThroughputByOperation')->name('wipDashboard.dailyThroughputByOperation');
+        Route::get('wipDashboard/batchBreakdownByOperation', 'Api\WipDashboardController@batchBreakdownByOperation')->name('wipDashboard.batchBreakdownByOperation');
         Route::get('wipDashboard/teamBatchSummary', 'Api\WipDashboardController@teamBatchSummary')->name('wipDashboard.teamBatchSummary');
         Route::get('wipDashboard/teamBatchSummaryRange', 'Api\WipDashboardController@teamBatchSummaryRange')->name('wipDashboard.teamBatchSummaryRange');
         Route::get('wipDashboard/batchBundles', 'Api\WipDashboardController@batchBundles')->name('wipDashboard.batchBundles');

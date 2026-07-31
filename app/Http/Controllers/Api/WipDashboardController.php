@@ -1286,6 +1286,47 @@ class WipDashboardController extends Controller
     }
 
     /**
+     * Production by main model / model / batch, scoped to one operation —
+     * the "Production by Main Model / Model / Batch" table's data source,
+     * kept in step with the "Daily Throughput & Quality" chart above it by
+     * sharing the same operation selector and range. Same
+     * operation_id-defaults-to-final-operation rule as
+     * dailyThroughputByOperation().
+     */
+    public function batchBreakdownByOperation(Request $request): JsonResponse
+    {
+        try {
+            $operationId = $request->filled('operation_id')
+                ? (int) $request->input('operation_id')
+                : optional(OperationMaster::where('is_final_operation', true)->first())->id;
+
+            if (!$operationId) {
+                return $this->error('No operation_id given and no final operation is configured.', null, 422);
+            }
+
+            $to = $request->filled('to') ? Carbon::parse($request->input('to'))->endOfDay() : now();
+            $from = $request->filled('from') ? Carbon::parse($request->input('from'))->startOfDay() : $to->copy()->subDays(29)->startOfDay();
+
+            if ($from->gt($to)) {
+                return $this->error('The "from" date must not be after the "to" date.', null, 422);
+            }
+
+            $shiftTeamIds = $this->shiftTeamIdsForRange($from, $to);
+
+            return $this->success('Batch breakdown retrieved successfully.', [
+                'operation_id' => $operationId,
+                'from' => $from->toDateString(),
+                'to' => $to->toDateString(),
+                'batch_breakdown' => $this->batchBreakdown($shiftTeamIds, $operationId),
+            ]);
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), null, 422);
+        } catch (Exception $e) {
+            return $this->error('Failed to retrieve batch breakdown.', $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Same per-day scanned/rejected/rework shape as management()'s
      * $daily, but scoped to a single operation and, for the "scanned"
      * side, to OUT-direction tickets only — an operation's IN ticket is
@@ -1419,12 +1460,18 @@ class WipDashboardController extends Controller
      * model / batch — the "which product lines are we actually running,
      * and how clean is each one" view a production manager or MD needs,
      * on top of the day-by-day trend above.
+     *
+     * When $operationId is given (the "Production by Main Model / Model /
+     * Batch" table scoped to the same operation as the "Daily Throughput &
+     * Quality" chart above it), scanned_qty is further narrowed to that
+     * operation's OUT-direction scans — same convention, for the same
+     * reason, as dailyThroughputForOperation() above.
      */
-    private function batchBreakdown($shiftTeamIds)
+    private function batchBreakdown($shiftTeamIds, ?int $operationId = null)
     {
-        $scanned = $this->batchQtyByGroup('bundle_ticket_secondaries', 'scan_qty', $shiftTeamIds);
-        $rejected = $this->batchQtyByGroup('bundle_ticket_rejects', 'reject_qty', $shiftTeamIds);
-        $reworked = $this->batchQtyByGroup('bundle_ticket_reworks', 'rework_qty', $shiftTeamIds);
+        $scanned = $this->batchQtyByGroup('bundle_ticket_secondaries', 'scan_qty', $shiftTeamIds, $operationId, $operationId ? 'OUT' : null);
+        $rejected = $this->batchQtyByGroup('bundle_ticket_rejects', 'reject_qty', $shiftTeamIds, $operationId);
+        $reworked = $this->batchQtyByGroup('bundle_ticket_reworks', 'rework_qty', $shiftTeamIds, $operationId);
 
         $keys = $scanned->keys()->concat($rejected->keys())->concat($reworked->keys())->unique();
 
@@ -1456,10 +1503,16 @@ class WipDashboardController extends Controller
      * (batch, model) via bundle -> work_order -> batch_detail — the
      * authoritative model for a work order, since one batch can be split
      * across several models (batch_details).
+     *
+     * $operationId narrows this to a single operation (via
+     * routing_operation_masters, same join used everywhere else this
+     * dashboard scopes by operation); $direction further narrows it to one
+     * bundle_tickets.direction on top of that (see batchBreakdown()'s
+     * OUT-only scanned_qty).
      */
-    private function batchQtyByGroup(string $table, string $qtyColumn, $shiftTeamIds)
+    private function batchQtyByGroup(string $table, string $qtyColumn, $shiftTeamIds, ?int $operationId = null, ?string $direction = null)
     {
-        return DB::table("$table as t")
+        $query = DB::table("$table as t")
             ->join('bundle_tickets as bt', 'bt.id', '=', 't.bundle_ticket_id')
             ->join('bundles as b', 'b.id', '=', 'bt.bundle_id')
             ->join('work_orders as wo', 'wo.id', '=', 'b.work_order_id')
@@ -1468,7 +1521,18 @@ class WipDashboardController extends Controller
             ->join('models as mo', 'mo.id', '=', 'bd.model_id')
             ->leftJoin('main_models as mm', 'mm.id', '=', 'mo.main_model_id')
             ->where('t.active', true)
-            ->whereIn('t.daily_shift_team_id', $shiftTeamIds)
+            ->whereIn('t.daily_shift_team_id', $shiftTeamIds);
+
+        if ($operationId) {
+            $query->join('work_order_operations as woo', 'woo.id', '=', 'bt.work_order_operation_id')
+                ->join('routing_operation_masters as rom', 'rom.id', '=', 'woo.routing_operation_master_id')
+                ->where('rom.operation_id', $operationId);
+        }
+        if ($direction) {
+            $query->where('bt.direction', $direction);
+        }
+
+        return $query
             ->groupBy('ba.id', 'ba.batch_no', 'mo.id', 'mo.name', 'mm.id', 'mm.name')
             ->selectRaw("
                 ba.id as batch_id, ba.batch_no,

@@ -240,7 +240,7 @@ class WorkOrderRepository
 
             if ($currentTrollyMasterId !== $trollyMasterId) {
                 if ($currentTrollyMasterId) {
-                    $this->releaseTrolly($currentTrollyMasterId);
+                    $this->releaseTrolly($currentTrollyMasterId, (int) $bundle->id);
                 }
                 if ($trollyMasterId) {
                     $this->assignTrolly($trollyMasterId, $bundle->id);
@@ -267,7 +267,13 @@ class WorkOrderRepository
         if (!$trolly) {
             throw new InvalidArgumentException('The selected trolley was not found.');
         }
-        if ($trolly->used) {
+
+        // `bundle_id` is checked as well as `used`, not instead of it: the
+        // two can disagree on older rows (the `used` column was dropped and
+        // re-added, zeroing it while occupants survived), and an occupied
+        // trolly must never be handed to a second bundle on the strength of
+        // a zeroed flag alone.
+        if ($trolly->used || ($trolly->bundle_id !== null && (int) $trolly->bundle_id !== $bundleId)) {
             throw new InvalidArgumentException('The selected trolley is already in use.');
         }
 
@@ -278,12 +284,19 @@ class WorkOrderRepository
 
     /**
      * Free up a trolley so it becomes available for other bundles again.
+     *
+     * Only releases a trolley still carrying $bundleId. A bundle keeps its
+     * `trolly_master_id` for traceability after TrollyAllocationService
+     * frees the trolley on route completion, so this stale link must not be
+     * able to unload a trolley that has since been given to another bundle.
+     *
+     * @see \App\Services\TrollyAllocationService
      */
-    private function releaseTrolly(int $trollyMasterId): void
+    private function releaseTrolly(int $trollyMasterId, int $bundleId): void
     {
         $trolly = TrollyMaster::where('id', $trollyMasterId)->lockForUpdate()->first();
 
-        if ($trolly) {
+        if ($trolly && (int) $trolly->bundle_id === $bundleId) {
             $trolly->used = false;
             $trolly->bundle_id = null;
             $trolly->save();

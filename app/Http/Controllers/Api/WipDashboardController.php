@@ -291,8 +291,7 @@ class WipDashboardController extends Controller
     private function accumulateFloorData(Bundle $bundle, array &$stations, array &$alerts, array &$batches): void
     {
         $ledger = $this->ledger->build($bundle);
-        $workOrderOperations = $ledger['workOrderOperations'];
-        if ($workOrderOperations->every($ledger['resolved'])) {
+        if ($ledger['bundleComplete']) {
             return;
         }
 
@@ -1041,8 +1040,7 @@ class WipDashboardController extends Controller
     private function accumulateBundleDetail(Bundle $bundle, array &$bundles): void
     {
         $ledger = $this->ledger->build($bundle);
-        $workOrderOperations = $ledger['workOrderOperations'];
-        if ($workOrderOperations->every($ledger['resolved'])) {
+        if ($ledger['bundleComplete']) {
             return;
         }
 

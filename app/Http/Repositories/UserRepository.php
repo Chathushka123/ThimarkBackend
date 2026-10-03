@@ -115,7 +115,9 @@ class UserRepository
       }else{
         $model->common_user = null;
       }
-      self::updateRec($model->id, $model->toArray());
+      $rec = $model->toArray();
+      $rec['password'] = $model->password;
+      self::updateRec($model->id, $rec);
       DB::commit();
       return response()->json(["status" => "success"], 200);
     } catch (Exception $e) {

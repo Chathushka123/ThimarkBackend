@@ -111,7 +111,18 @@
       "Bash(grep -v \"\\\\.map$\")",
       "Bash(node --check src/components/pages/Team/TeamDS.js)",
       "Bash(timeout 180 npx react-scripts build)",
-      "Bash(echo \"EXIT_CODE=$?\")"
+      "Bash(echo \"EXIT_CODE=$?\")",
+      "Bash(grep -rn '\\\\['\\\\''progress'\\\\''\\\\]\\\\|'\\\\''progress'\\\\''\\\\|$resolved\\\\|ledger\\\\['\\\\''resolved'\\\\''\\\\]' app/Http/Controllers/Api/WipScanController.php app/Http/Controllers/Api/WipDashboardController.php)",
+      "Bash(grep -rn 'ledger\\\\['\\\\''resolved'\\\\''\\\\]\\\\|every\\($ledger\\\\|$resolved' app/)",
+      "Bash(sed -i '1044d;294d' app/Http/Controllers/Api/WipDashboardController.php)",
+      "Bash(php -l app/Services/TrollyAllocationService.php)",
+      "Bash(php -l app/Console/Commands/ReconcileTrollyAllocations.php)",
+      "Bash(php -l app/Http/Repositories/WorkOrderRepository.php)",
+      "Bash(grep -n 'from_date\\\\|to_date\\\\|protected $table' app/DailyShiftTeam.php)",
+      "Bash(php \"/tmp/claude-1000/-home-chathura-jayawardane-Documents-Programming-WithChathushka-Thimark-ThimarkBackend/d500d6cf-ed07-4f8e-bb6c-1d3529ebc445/scratchpad/trolly_qa.php\")",
+      "Bash(php -l trolly_qa.php)",
+      "Bash(awk '/public function management/,/^    }/' app/Http/Controllers/Api/WipDashboardController.php)",
+      "Bash(php \"/tmp/claude-1000/-home-chathura-jayawardane-Documents-Programming-WithChathushka-Thimark-ThimarkBackend/d500d6cf-ed07-4f8e-bb6c-1d3529ebc445/scratchpad/regression.php\")"
     ],
     "additionalDirectories": [
       "/home/chathura-jayawardane/Documents/Programming/WithChathushka/Thimark/ThimarkFronend/src/utils",

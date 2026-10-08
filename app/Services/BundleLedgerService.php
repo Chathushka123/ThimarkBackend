@@ -28,7 +28,7 @@ use App\Models\WorkOrderOperation;
 class BundleLedgerService
 {
     /**
-     * @return array{workOrderOperations: \Illuminate\Support\Collection, tickets: \Illuminate\Support\Collection, ticketFor: \Closure, scanned: \Closure, rejected: \Closure, outstandingRework: \Closure, effectiveQty: \Closure, ticketRemaining: \Closure, ticketResolved: \Closure, resolved: \Closure, entryCapBySeq: array<int,int|null>, entrySourceBySeq: array<int,array>}
+     * @return array{workOrderOperations: \Illuminate\Support\Collection, tickets: \Illuminate\Support\Collection, ticketFor: \Closure, scanned: \Closure, rejected: \Closure, outstandingRework: \Closure, effectiveQty: \Closure, ticketRemaining: \Closure, ticketResolved: \Closure, resolved: \Closure, entryCapBySeq: array<int,int|null>, entrySourceBySeq: array<int,array>, availableNow: \Closure, progress: array{completed:int,total:int}, bundleComplete: bool}
      */
     public function build(Bundle $bundle, bool $forWrite = false): array
     {
@@ -198,6 +198,24 @@ class BundleLedgerService
             return max(0, min($remaining, $cap - $consumed));
         };
 
+        // The bundle's route-level progress, and the single definition of
+        // "this bundle has finished its last operation and direction" —
+        // every caller that needs to know must read `bundleComplete` rather
+        // than re-deriving it, since `resolved` deliberately encodes
+        // non-obvious rules (effectiveQty vs raw qty, outstanding rework
+        // still blocking) that are easy to get subtly wrong in a one-liner.
+        //
+        // The `total > 0` guard matters: a bundle whose work order has no
+        // route steps yet has nothing to finish, but `completed === total`
+        // (and `->every()` on an empty collection) would both call it
+        // complete the moment it was created — which would, for instance,
+        // free its trolly before the bundle had moved anywhere.
+        $progress = [
+            'completed' => $workOrderOperations->filter($resolved)->count(),
+            'total' => $workOrderOperations->count(),
+        ];
+        $bundleComplete = $progress['total'] > 0 && $progress['completed'] === $progress['total'];
+
         return [
             'workOrderOperations' => $workOrderOperations,
             'tickets' => $tickets,
@@ -212,6 +230,8 @@ class BundleLedgerService
             'entryCapBySeq' => $entryCapBySeq,
             'entrySourceBySeq' => $entrySourceBySeq,
             'availableNow' => $availableNow,
+            'progress' => $progress,
+            'bundleComplete' => $bundleComplete,
         ];
     }
 }

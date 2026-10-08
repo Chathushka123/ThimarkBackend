@@ -40,7 +40,9 @@ return [
     /*
      * Matches the request origin with, similar to `Request::is()`
      */
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => env('APP_ENV') === 'local'
+        ? ['#^https?://(localhost|127\.0\.0\.1)(:\d+)?$#']
+        : [],
 
     /*
      * Sets the Access-Control-Allow-Headers response header. `[*]` allows all headers.

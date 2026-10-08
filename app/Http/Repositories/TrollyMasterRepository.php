@@ -44,6 +44,7 @@ class TrollyMasterRepository
             'code' => 'required|string|max:100',
             'name' => 'required|string|max:255',
             'active' => 'nullable|boolean',
+            'bundle_id' => 'nullable|integer|min:1',
         ]);
 
         if ($validator->fails()) {
@@ -62,6 +63,13 @@ class TrollyMasterRepository
             ];
 
             if ($id) {
+                // An explicit bundle_id: null releases the trolley from its bundle
+                // (same as WorkOrderRepository::releaseTrolly) so it can be reused.
+                if ($request->exists('bundle_id') && $request->input('bundle_id') === null) {
+                    $payload['bundle_id'] = null;
+                    $payload['used'] = false;
+                }
+
                 $trollyMaster = TrollyMaster::findOrFail($id);
                 $trollyMaster->update($payload);
             } else {

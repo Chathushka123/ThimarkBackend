@@ -239,6 +239,13 @@ $navigator_json = '
             "permitted" : 0,
             "path":"/workOrderCreation"
          },
+                 {
+            "caption":"Work Order Picking",
+            "icon":"fas fa-file-invoice-dollar",
+            "type":"node",
+            "permitted" : 0,
+            "path":"/workOrderPicking"
+         },
          {
             "caption":"Trolley",
             "icon":"fas fa-file-invoice-dollar",

@@ -18,6 +18,7 @@ use App\Models\Reason;
 use App\Models\UserOperation;
 use App\Models\WorkOrderOperation;
 use App\Services\BundleLedgerService;
+use App\Services\TrollyAllocationService;
 use App\TrollyMaster;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -59,9 +60,12 @@ class WipScanController extends Controller
 {
     private BundleLedgerService $ledger;
 
-    public function __construct(BundleLedgerService $ledger)
+    private TrollyAllocationService $trollyAllocation;
+
+    public function __construct(BundleLedgerService $ledger, TrollyAllocationService $trollyAllocation)
     {
         $this->ledger = $ledger;
+        $this->trollyAllocation = $trollyAllocation;
     }
 
     /**
@@ -251,6 +255,9 @@ class WipScanController extends Controller
                 'seq' => $target['rom']->seq,
                 'available_directions' => $target['availableDirections'],
                 'previous_step' => $target['previousStep'],
+                // Lets the operator confirm the bundle in front of them is on
+                // the trolly the system thinks it's on, before they scan.
+                'trolly' => $this->trollyStateFor($target['bundle']),
             ]);
         } catch (Exception $e) {
             return $this->error('Failed to look up bundle.', $e->getMessage(), 500);
@@ -364,6 +371,13 @@ class WipScanController extends Controller
                 // inside the lock).
                 $after = $this->resolveScanTarget($operationId, $bundleId, false, true);
 
+                // The bundle rides its trolly through every operation and
+                // direction; this is where it may have just cleared the last
+                // one, which frees the trolly for the next bundle. Done
+                // inside the scan transaction so the trolly is never freed
+                // against a scan that then rolls back.
+                $trolly = $this->trollyAllocation->sync($target['bundle'], $after['bundleComplete']);
+
                 return $this->success('Scan recorded.', [
                     'bundle_id' => $target['bundle']->id,
                     'work_order_id' => $target['bundle']->work_order_id,
@@ -384,7 +398,11 @@ class WipScanController extends Controller
                     'seq' => $rom->seq,
                     'previous_step' => $target['previousStep'],
                     'progress' => $after['progress'],
-                    'bundle_complete' => $after['progress']['completed'] === $after['progress']['total'],
+                    'bundle_complete' => $after['bundleComplete'],
+                    // Present only when this scan changed trolly occupancy,
+                    // so the scanning screen can tell the operator the
+                    // trolly is now free to unload and re-use.
+                    'trolly' => $trolly,
                     'created_at' => now()->toIso8601String(),
                 ], 201);
             });
@@ -439,6 +457,11 @@ class WipScanController extends Controller
                     'active' => true,
                 ]);
 
+                // No trolly re-evaluation here, deliberately: sending to
+                // rework only ever *adds* outstanding qty, which can never
+                // complete a route — and it can't reopen one either, since a
+                // complete bundle has no remaining qty for resolveScanTarget()
+                // to hand out. undoReworkSend() is where it matters.
                 return $this->success('Sent to rework.', [
                     'id' => $rework->id,
                     'bundle_id' => $target['bundle']->id,
@@ -524,12 +547,19 @@ class WipScanController extends Controller
                     'active' => true,
                 ]);
 
+                // Resolving the last outstanding rework can be what finally
+                // completes the bundle's route (its final operation stays
+                // unresolved while any rework is still outstanding), so the
+                // trolly has to be re-evaluated here too — not just in scan().
+                $trolly = $this->trollyAllocation->syncByBundleId((int) $ticket->bundle_id);
+
                 return $this->success('Rework return recorded.', [
                     'id' => $return->id,
                     'bundle_ticket_id' => $ticketId,
                     'return_qty' => $returnQty,
                     'reject_qty' => $rejectQty,
                     'outstanding_after' => $outstanding - $returnQty - $rejectQty,
+                    'trolly' => $trolly,
                 ], 201);
             });
         } catch (Exception $e) {
@@ -635,19 +665,51 @@ class WipScanController extends Controller
 
             $totalRejected = $tickets->sum('rejected');
             $totalOutstandingRework = $tickets->sum('outstanding_rework');
-            $isComplete = $tickets->every(fn ($t) => $t['resolved']);
 
             return $this->success('Reconciliation retrieved successfully.', [
                 'bundle_id' => $bundle->id,
                 'bundle_qty' => $bundle->qty,
                 'total_rejected' => $totalRejected,
                 'total_outstanding_rework' => $totalOutstandingRework,
-                'is_complete' => $isComplete,
+                'is_complete' => $ledger['bundleComplete'],
+                'trolly' => $this->trollyStateFor($bundle),
                 'tickets' => $tickets,
             ]);
         } catch (Exception $e) {
             return $this->error('Failed to retrieve reconciliation.', $e->getMessage(), 500);
         }
+    }
+
+    /**
+     * The bundle's trolly for reporting: which trolly carried it, and
+     * whether it is still physically loaded on it.
+     *
+     * Reads live occupancy from `trolly_masters.bundle_id` (the
+     * authoritative column) before falling back to the bundle's own
+     * `trolly_master_id`, which is a historical record only — it is NULL on
+     * rows predating the column's re-add, and still populated after the
+     * trolly has been released and handed to another bundle.
+     *
+     * @see \App\Services\TrollyAllocationService
+     * @return array{trolly_master_id: int, trolly_code: string|null, still_loaded: bool}|null
+     */
+    private function trollyStateFor(Bundle $bundle): ?array
+    {
+        $loaded = TrollyMaster::where('bundle_id', $bundle->id)->first();
+
+        $trolly = $loaded ?: ($bundle->trolly_master_id !== null
+            ? TrollyMaster::find($bundle->trolly_master_id)
+            : null);
+
+        if (!$trolly) {
+            return null;
+        }
+
+        return [
+            'trolly_master_id' => (int) $trolly->id,
+            'trolly_code' => $trolly->code,
+            'still_loaded' => $loaded !== null,
+        ];
     }
 
     /**
@@ -660,7 +722,7 @@ class WipScanController extends Controller
      *        specific direction only instead of auto-detecting — lets an operator
      *        explicitly switch direction on the scanning screen rather than being
      *        forced through IN before OUT becomes reachable.
-     * @return array{error: JsonResponse}|array{bundle: Bundle, ticket: BundleTicket, direction: string, remaining: int, rom: mixed, ticketRemaining: array<int,int>, progress: array{completed:int,total:int}, availableDirections: array{in: bool, out: bool}, previousStep: array|null}
+     * @return array{error: JsonResponse}|array{bundle: Bundle, ticket: BundleTicket, direction: string, remaining: int, rom: mixed, ticketRemaining: array<int,int>, progress: array{completed:int,total:int}, bundleComplete: bool, availableDirections: array{in: bool, out: bool}, previousStep: array|null}
      */
     private function resolveScanTarget(int $operationId, int $bundleId, bool $forWrite, bool $skipCurrentOp = false, ?string $requestedDirection = null): array
     {
@@ -679,18 +741,19 @@ class WipScanController extends Controller
         $scanned = $ledger['scanned'];
         $ticketRemainingFn = $ledger['ticketRemaining'];
         $entryCapBySeq = $ledger['entryCapBySeq'];
-        $resolved = $ledger['resolved'];
-
-        $progress = [
-            'completed' => $workOrderOperations->filter($resolved)->count(),
-            'total' => $workOrderOperations->count(),
-        ];
+        $progress = $ledger['progress'];
+        $bundleComplete = $ledger['bundleComplete'];
         $ticketRemainingMap = $ledger['tickets']->mapWithKeys(fn (BundleTicket $t) => [$t->id => $ticketRemainingFn($t)]);
 
         if ($skipCurrentOp) {
             // Only the post-write ledger snapshot was needed (used by scan()
             // to report progress after writing) — no ticket resolution.
-            return ['ticketRemaining' => $ticketRemainingMap, 'progress' => $progress];
+            return [
+                'bundle' => $bundle,
+                'ticketRemaining' => $ticketRemainingMap,
+                'progress' => $progress,
+                'bundleComplete' => $bundleComplete,
+            ];
         }
 
         $currentWoo = $workOrderOperations->first(
@@ -841,6 +904,7 @@ class WipScanController extends Controller
             'rom' => $rom,
             'ticketRemaining' => $ticketRemainingMap,
             'progress' => $progress,
+            'bundleComplete' => $bundleComplete,
             'availableDirections' => $availableDirections,
             'previousStep' => $previousStepFor($direction),
         ];
@@ -867,10 +931,17 @@ class WipScanController extends Controller
                 return $this->error('This scan can no longer be undone.', ['code' => 'EDIT_WINDOW_EXPIRED'], 422);
             }
 
-            $entry->active = false;
-            $entry->save();
+            $trolly = DB::transaction(function () use ($entry) {
+                $entry->active = false;
+                $entry->save();
 
-            return $this->success('Scan undone.');
+                // Undoing a scan can un-complete a bundle that had already
+                // finished its route — it's back on the floor, so it needs
+                // its trolly back.
+                return $this->trollyAllocation->syncByTicketId((int) $entry->bundle_ticket_id);
+            });
+
+            return $this->success('Scan undone.', ['trolly' => $trolly]);
         } catch (Exception $e) {
             return $this->error('Failed to undo scan.', $e->getMessage(), 500);
         }
@@ -895,10 +966,14 @@ class WipScanController extends Controller
                 return $this->error('This reject can no longer be undone.', ['code' => 'EDIT_WINDOW_EXPIRED'], 422);
             }
 
-            $entry->active = false;
-            $entry->save();
+            $trolly = DB::transaction(function () use ($entry) {
+                $entry->active = false;
+                $entry->save();
 
-            return $this->success('Reject undone.');
+                return $this->trollyAllocation->syncByTicketId((int) $entry->bundle_ticket_id);
+            });
+
+            return $this->success('Reject undone.', ['trolly' => $trolly]);
         } catch (Exception $e) {
             return $this->error('Failed to undo reject.', $e->getMessage(), 500);
         }
@@ -937,10 +1012,17 @@ class WipScanController extends Controller
                 return $this->error('Part of this batch has already been returned from rework — it can no longer be undone.', ['code' => 'ALREADY_RESOLVED'], 422);
             }
 
-            $entry->active = false;
-            $entry->save();
+            $trolly = DB::transaction(function () use ($entry) {
+                $entry->active = false;
+                $entry->save();
 
-            return $this->success('Rework entry undone.');
+                // Dropping an outstanding-rework qty removes what was
+                // blocking its operation from resolving, so this undo can
+                // *complete* a bundle rather than reopen one.
+                return $this->trollyAllocation->syncByTicketId((int) $entry->bundle_ticket_id);
+            });
+
+            return $this->success('Rework entry undone.', ['trolly' => $trolly]);
         } catch (Exception $e) {
             return $this->error('Failed to undo rework entry.', $e->getMessage(), 500);
         }
@@ -966,7 +1048,7 @@ class WipScanController extends Controller
                 return $this->error('This entry can no longer be undone.', ['code' => 'EDIT_WINDOW_EXPIRED'], 422);
             }
 
-            DB::transaction(function () use ($entry) {
+            $trolly = DB::transaction(function () use ($entry) {
                 if ($entry->bundle_ticket_secondary_id) {
                     BundleTicketSecondary::where('id', $entry->bundle_ticket_secondary_id)->update(['active' => false]);
                 }
@@ -975,9 +1057,13 @@ class WipScanController extends Controller
                 }
                 $entry->active = false;
                 $entry->save();
+
+                // Puts the qty back to outstanding rework, which can reopen
+                // a bundle that this return had completed.
+                return $this->trollyAllocation->syncByTicketId((int) $entry->bundle_ticket_id);
             });
 
-            return $this->success('Rework return undone.');
+            return $this->success('Rework return undone.', ['trolly' => $trolly]);
         } catch (Exception $e) {
             return $this->error('Failed to undo rework return.', $e->getMessage(), 500);
         }
